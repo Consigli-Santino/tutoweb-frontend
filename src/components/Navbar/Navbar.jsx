@@ -1,25 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import utnLogo from '../assets/UTN_logo.jpg';
+import utnLogo from '../../assets/UTN_logo.jpg';
+import './Navbar.css';
 
-// Estilos CSS mínimos para la animación de la campana
-const notificationBellStyle = `
-  @keyframes bellShake {
-    0% { transform: rotate(0); }
-    15% { transform: rotate(10deg); }
-    30% { transform: rotate(-10deg); }
-    45% { transform: rotate(5deg); }
-    60% { transform: rotate(-5deg); }
-    75% { transform: rotate(0); }
-    100% { transform: rotate(0); }
-  }
-
-  .notification-bell:hover {
-    animation: bellShake 0.5s cubic-bezier(.36,.07,.19,.97) both;
-    transform-origin: top center;
-    display: inline-block;
-  }
-`;
 
 const Navbar = ({ userOptions = [] }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -33,22 +16,12 @@ const Navbar = ({ userOptions = [] }) => {
                 setSidebarOpen(false);
             }
         }
-
         document.addEventListener('mousedown', handleClickOutside);
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [sidebarRef]);
 
-    // Opciones por defecto si no se pasan userOptions
-    const defaultOptions = [
-        { id: 1, name: 'Mi Perfil', icon: 'person-circle', path: '/profile' },
-        { id: 2, name: 'Configuración', icon: 'gear-fill', path: '/settings' },
-        { id: 3, name: 'Mis Tutorías', icon: 'journal-bookmark', path: '/tutorials' },
-        { id: 4, name: 'Cerrar Sesión', icon: 'box-arrow-right', path: '/logout' }
-    ];
-
-    const options = userOptions.length > 0 ? userOptions : defaultOptions;
 
     return (
         <>
@@ -111,9 +84,9 @@ const Navbar = ({ userOptions = [] }) => {
                     <div className="p-3">
                         <p className="text-muted small mb-2">MENÚ</p>
                         <div className="list-group list-group-flush">
-                            {options.map((option) => (
+                            {userOptions.map((option) => (
                                 <Link
-                                    key={option.id}
+                                    key={option.name}
                                     to={option.path}
                                     className="list-group-item list-group-item-action border-0 rounded-3 mb-1 d-flex align-items-center"
                                     onClick={() => setSidebarOpen(false)}
@@ -134,9 +107,6 @@ const Navbar = ({ userOptions = [] }) => {
                     onClick={() => setSidebarOpen(false)}
                 ></div>
             )}
-
-            {/* Estilos mínimos solo para la animación */}
-            <style>{notificationBellStyle}</style>
         </>
     );
 };

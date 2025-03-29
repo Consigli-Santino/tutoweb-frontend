@@ -1,0 +1,15 @@
+@keyframes bellShake {
+    0% { transform: rotate(0); }
+    15% { transform: rotate(10deg); }
+    30% { transform: rotate(-10deg); }
+    45% { transform: rotate(5deg); }
+    60% { transform: rotate(-5deg); }
+    75% { transform: rotate(0); }
+    100% { transform: rotate(0); }
+}
+
+.notification-bell:hover {
+    animation: bellShake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+    transform-origin: top center;
+    display: inline-block;
+}

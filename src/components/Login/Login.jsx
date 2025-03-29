@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import utnLogo from '../assets/UTN_logo.jpg'
-import {useNavigate} from "react-router-dom";
-
+import React, { useState, useCallback } from 'react';
+import utnLogo from '../../assets/UTN_logo.jpg';
+import { useNavigate } from "react-router-dom";
+import _ from 'lodash';
+import './LoginButton.css'; // Import the CSS file with spinner animation
 
 const Login = () => {
-
     const navigate = useNavigate();
+    const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
         email: '',
         password: ''
@@ -19,12 +20,21 @@ const Login = () => {
         }));
     };
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        navigate('/home');
-        // Aquí iría la lógica de autenticación
-        console.log('Datos enviados:', formData);
-    };
+    // Using lodash debounce for the login function
+    const handleSubmit = useCallback(
+        _.debounce((e) => {
+            e.preventDefault();
+            setIsLoading(true);
+
+            // Simulate API call with a 500ms delay
+            setTimeout(() => {
+                navigate('/home');
+                console.log('Datos enviados:', formData);
+                setIsLoading(false);
+            }, 500);
+        }, 500, { leading: true, trailing: false }),
+        [navigate, formData]
+    );
 
     return (
         <div className="container-fluid min-vh-100 d-flex align-items-center justify-content-center px-3 py-4">
@@ -55,6 +65,7 @@ const Login = () => {
                                     value={formData.email}
                                     onChange={handleChange}
                                     placeholder="Ingrese su correo institucional"
+                                    disabled={isLoading}
                                 />
                             </div>
                             <div className="mb-4">
@@ -66,14 +77,23 @@ const Login = () => {
                                     value={formData.password}
                                     onChange={handleChange}
                                     placeholder="••••••"
+                                    disabled={isLoading}
                                 />
                             </div>
-                            <button type="submit" className="btn btn-dark w-100 py-2 mb-3 rounded-3">
-                                Iniciar Sesión
+                            <button
+                                type="submit"
+                                className="btn w-100 py-2 mb-3 rounded-3"
+                                style={{backgroundColor: '#283048', color: 'white'}}
+                                disabled={isLoading}
+                            >
+                                <div className="login-button-content">
+                                    {isLoading && <span className="login-button-spinner"></span>}
+                                    Iniciar Sesión
+                                </div>
                             </button>
                             <div className="text-center">
                                 <a href="#" className="text-muted small d-block mb-2">¿Olvidaste la contraseña?</a>
-                                <a href="#" className="text-muted small">Registrarse</a>
+                                <a href="/register" className="text-muted small">Registrarse</a>
                             </div>
                         </form>
                     </div>
