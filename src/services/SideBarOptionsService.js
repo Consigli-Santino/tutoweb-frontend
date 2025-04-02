@@ -11,6 +11,12 @@ class SidebarOptionsService {
             "name": "Mi Perfil",
             "roles": ["guardia"],
             "path": "/profile"
+        },
+        {
+           "icon": "mortarboard",
+            "name": "Quiero ser Profe",
+            "roles": ["alumno", "alumno&profesor", "superAdmin"],
+            "path": "/want-to-be-teacher"
         }
     ]
     loadSideBarOptionsBasedOnRole() {

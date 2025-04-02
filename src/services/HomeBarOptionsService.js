@@ -15,13 +15,13 @@ class HomeBarOptionsService {
         {
             "icon": "calendar",
             "name": "Horarios",
-            "roles": ["alumno", "alumno&profesor", "admin"],
+            "roles": ["alumno", "alumno&profesor", "superAdmin"],
             "path": "/evaluations"
         },
         {
             "icon": "coin",
             "name": "Pagos y saldos",
-            "roles": ["alumno", "admin"],
+            "roles": ["alumno", "superAdmin"],
             "path": "/payments"
         }
     ]

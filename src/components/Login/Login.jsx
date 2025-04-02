@@ -1,8 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import utnLogo from '../../assets/UTN_logo.jpg';
 import { useNavigate } from "react-router-dom";
 import _ from 'lodash';
-import './LoginButton.css'; // Import the CSS file with spinner animation
+import './LoginButton.css';
+import LoginService from "../../services/LoginService.js";
 
 const Login = () => {
     const navigate = useNavigate();
@@ -11,6 +12,7 @@ const Login = () => {
         email: '',
         password: ''
     });
+    const [error, setError] = useState('');
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -18,23 +20,34 @@ const Login = () => {
             ...prevState,
             [name]: value
         }));
+        // Limpiar el error cuando el usuario comienza a escribir
+        if (error) setError('')
+        ;
     };
 
-    // Using lodash debounce for the login function
-    const handleSubmit = useCallback(
-        _.debounce((e) => {
-            e.preventDefault();
-            setIsLoading(true);
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        debugger
+        setIsLoading(true);
+        setError('');
+        try {
+            const result = await LoginService.login(formData.email, formData.password);
 
-            // Simulate API call with a 500ms delay
-            setTimeout(() => {
+            if (result.success) {
+                // Login exitoso
+                localStorage.setItem('token', result.data.access_token);
                 navigate('/home');
-                console.log('Datos enviados:', formData);
-                setIsLoading(false);
-            }, 500);
-        }, 500, { leading: true, trailing: false }),
-        [navigate, formData]
-    );
+            } else {
+                // Error en el login
+                setError(result.error);
+            }
+        } catch (error) {
+            console.error('Error inesperado:', error);
+            setError('Ocurrió un error inesperado. Intente nuevamente.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
         <div className="container-fluid min-vh-100 d-flex align-items-center justify-content-center px-3 py-4">
@@ -91,6 +104,14 @@ const Login = () => {
                                     Iniciar Sesión
                                 </div>
                             </button>
+
+                            {/* Mensaje de error */}
+                            {error && (
+                                <div className="alert alert-danger py-2 text-center mb-3">
+                                    {error}
+                                </div>
+                            )}
+
                             <div className="text-center">
                                 <a href="#" className="text-muted small d-block mb-2">¿Olvidaste la contraseña?</a>
                                 <a href="/register" className="text-muted small">Registrarse</a>

@@ -2,16 +2,21 @@ import Navbar from "../Navbar/Navbar.jsx";
 import SideBarOptionsService from "../../services/SideBarOptionsService.js";
 import HomeBarOptionsService from "../../services/HomeBarOptionsService.js";
 import HomeBar from "../HomeBar/HomeBar.jsx";
+import {useAuth} from "../../context/AuthContext.jsx";
 
 const Home =()=>{
+    const {user, availableRoutesSideBar, availableRoutesHomeBar} = useAuth();
 
-    const userOptionsSideBar = SideBarOptionsService.getOptions();
-    const userOptionsHome = HomeBarOptionsService.getOptions();
-
+    const filteredButtonsSideBar = SideBarOptionsService.getOptions().filter((option) => {
+        return availableRoutesSideBar.includes(option.path);
+    })
+    const filteredButtonsHome = HomeBarOptionsService.getOptions().filter((option) => {
+        return availableRoutesHomeBar.includes(option.path);
+    })
     return(
         <div className="d-flex flex-column min-vh-100">
             {/* Navbar */}
-            <Navbar userOptions={userOptionsSideBar} />
+            <Navbar userOptions={filteredButtonsSideBar} />
 
             {/* Contenido */}
             <div className="container-fluid py-4 flex-grow-1">
@@ -22,7 +27,7 @@ const Home =()=>{
                     </div>
                 </div>
             </div>
-            <HomeBar userOptions={userOptionsHome}/>
+            <HomeBar userOptions={filteredButtonsHome} />
         </div>
     )
 }
