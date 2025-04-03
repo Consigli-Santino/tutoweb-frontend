@@ -20,9 +20,6 @@ export const AuthProvider = ({ children }) => {
     const [availableRoutesHomeBar, setAvailableRoutesHomeBar] = useState([]);
     const loginUrl = import.meta.env.VITE_LOGIN_TUTOWEB;
 
-    const sideBarOptions = SideBarOptionsService.getOptions();
-    const homeBarOptions = HomeBarOptionsService.getOptions();
-
     const loadUserFromToken = () => {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -49,6 +46,9 @@ export const AuthProvider = ({ children }) => {
                 );
             }
             console.log('Roles del usuario:', roles);
+            debugger
+            const sideBarOptions = SideBarOptionsService.getOptions(roles)
+            const homeBarOptions = HomeBarOptionsService.getOptions(roles);
             const routesSideBar = sideBarOptions
                 .filter(option => {
                     return option.roles.some(role => roles.includes(role));
@@ -137,5 +137,4 @@ export const AuthProvider = ({ children }) => {
         </AuthContext.Provider>
     );
 };
-
-export default AuthContext;
+export default useAuth;

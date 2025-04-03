@@ -16,7 +16,7 @@ function App() {
                     {/* Rutas públicas */}
                     <Route path="/" element={<Login />} />
                     <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<FormUser />} />
+                    <Route path="/form-user" element={<FormUser />} />
                     <Route path="/unauthorized" element={<Unauthorized />} />
 
                     {/* Rutas protegidas */}

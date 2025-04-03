@@ -2,7 +2,7 @@ import Navbar from "../Navbar/Navbar.jsx";
 import SideBarOptionsService from "../../services/SideBarOptionsService.js";
 import HomeBarOptionsService from "../../services/HomeBarOptionsService.js";
 import HomeBar from "../HomeBar/HomeBar.jsx";
-import {useAuth} from "../../context/AuthContext.jsx";
+import useAuth from "../../context/AuthContext.jsx";
 
 const Home =()=>{
     const {user, availableRoutesSideBar, availableRoutesHomeBar} = useAuth();

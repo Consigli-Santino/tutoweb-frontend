@@ -1,15 +1,21 @@
 class HomeBarOptionsService {
     optionsHomeBar = [
         {
+            "icon": "building-fill",
+            "name": "Carreras",
+            "roles": ["superAdmin"],
+            "path": "/carriers"
+        },
+        {
             "icon": "folder",
             "name": "Materias",
-            "roles": ["alumno", "alumno&profesor", "admin"],
+            "roles": ["alumno", "alumno&profesor", "superAdmin"],
             "path": "/subjects"
         },
         {
             "icon": "book",
             "name": "Clases",
-            "roles": ["alumno", "alumno&profesor", "admin", "guardia"],
+            "roles": ["alumno", "alumno&profesor", "superAdmin", "guardia"],
             "path": "/library"
         },
         {
@@ -26,17 +32,24 @@ class HomeBarOptionsService {
         }
     ]
 
-    loadHomeBarOptionsBasedOnRole() {
-        //TODO GET USER ROLE FROM LOCAL STORAGE
-        const userRole = "alumno";
-
-        return this.optionsHomeBar.filter(option => {
-            return option.roles.includes(userRole);
-        });
+    loadHomeBarOptionsBasedOnRole(roles) {
+        if (Array.isArray(roles)) {
+            return this.optionsHomeBar.filter(option => {
+                return roles.some(role => option.roles.includes(role));
+            });
+        }
+        // Si roles es un string único
+        else if (typeof roles === 'string') {
+            return this.optionsHomeBar.filter(option => {
+                return option.roles.includes(roles);
+            });
+        }
+        // Si por alguna razón roles es undefined o null
+        return [];
     }
 
-    getOptions() {
-        return this.loadHomeBarOptionsBasedOnRole();
+    getOptions(roles) {
+        return this.loadHomeBarOptionsBasedOnRole(roles);
     }
 }
 

@@ -3,14 +3,8 @@ class SidebarOptionsService {
         {
             "icon": "person-circle",
             "name": "Mi Perfil",
-            "roles": ["alumno", "alumno&profesor", "admin"],
-            "path": "/profile"
-        },
-        {
-            "icon": "person-circle",
-            "name": "Mi Perfil",
-            "roles": ["guardia"],
-            "path": "/profile"
+            "roles": ["guardia","superAdmin"],
+            "path": "/form-user"
         },
         {
            "icon": "mortarboard",
@@ -19,16 +13,25 @@ class SidebarOptionsService {
             "path": "/want-to-be-teacher"
         }
     ]
-    loadSideBarOptionsBasedOnRole() {
-        //TODO GET USER ROLE FROM LOCAL STORAGE
-        const userRole = "alumno"
-        return this.sideBarOptions.filter(option => {
-            return option.roles.includes(userRole);
-        });
+    loadSideBarOptionsBasedOnRole(roles) {
+        // Si roles es ya un array, usarlo directamente
+        if (Array.isArray(roles)) {
+            return this.sideBarOptions.filter(option => {
+                return roles.some(role => option.roles.includes(role));
+            });
+        }
+        // Si roles es un string único
+        else if (typeof roles === 'string') {
+            return this.sideBarOptions.filter(option => {
+                return option.roles.includes(roles);
+            });
+        }
+        // Si por alguna razón roles es undefined o null
+        return [];
     }
 
-    getOptions() {
-        return this.loadSideBarOptionsBasedOnRole();
+    getOptions(role) {
+        return this.loadSideBarOptionsBasedOnRole(role);
     }
 }
 

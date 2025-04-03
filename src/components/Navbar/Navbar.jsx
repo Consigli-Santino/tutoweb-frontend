@@ -37,14 +37,14 @@ const Navbar = ({ userOptions = [] }) => {
                         <i className="bi bi-person-circle fs-4"></i>
                     </button>
 
-                    {/* Logo central */}
+                    {/* Logo central
                     <div className="navbar-brand mx-auto d-flex align-items-center">
                         <div className="bg-white rounded-3 p-1 me-2" style={{width: '40px', height: '40px'}}>
                             <img src={utnLogo} alt="Logo UTN" className="img-fluid" />
                         </div>
                         <span className="fw-bold d-none d-sm-inline">TutoWeb</span>
                     </div>
-
+                     */}
                     {/* Notificaciones a la derecha */}
                     <div className="ms-auto">
                         <button className="btn btn-link text-white border-0 p-0">
