@@ -93,10 +93,25 @@ export const AuthProvider = ({ children }) => {
     };
     const hasAccess = (path) => {
         if (!user) return false;
+
+        // Siempre permitir acceso a /home
         if (path === '/home') {
             return true;
         }
-        return availableRoutesSideBar.includes(path) || availableRoutesHomeBar.includes(path);
+
+        // Verificar acceso directo
+        if (availableRoutesSideBar.includes(path) || availableRoutesHomeBar.includes(path)) {
+            return true;
+        }
+        // Por ejemplo, si tiene acceso a /users, también debería tener acceso a /admin/usuarios/*
+        if (path.startsWith('/admin/usuarios/')) {
+            return availableRoutesSideBar.includes('/users') ||
+                availableRoutesHomeBar.includes('/users') ||
+                availableRoutesSideBar.includes('/admin/usuarios') ||
+                availableRoutesHomeBar.includes('/admin/usuarios');
+        }
+
+        return false;
     };
 
     useEffect(() => {

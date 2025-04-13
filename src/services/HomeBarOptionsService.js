@@ -1,6 +1,12 @@
 class HomeBarOptionsService {
     optionsHomeBar = [
         {
+            "icon": "house-fill",
+            "name": "Inicio",
+            "roles": ["alumno", "alumno&profesor", "superAdmin", "guardia"],
+            "path": "/home"
+        },
+        {
             "icon": "building-fill",
             "name": "Carreras",
             "roles": ["superAdmin"],
@@ -9,14 +15,20 @@ class HomeBarOptionsService {
         {
             "icon": "folder",
             "name": "Materias",
-            "roles": ["alumno", "alumno&profesor", "superAdmin"],
+            "roles": ["alumno", "alumno&profesor"],
             "path": "/subjects"
+        },
+        {
+            "icon": "people",
+            "name": "Usuarios",
+            "roles": ["superAdmin"],
+            "path": "/users"
         },
         {
             "icon": "book",
             "name": "Clases",
             "roles": ["alumno", "alumno&profesor", "superAdmin", "guardia"],
-            "path": "/library"
+            "path": "/clases"
         },
         {
             "icon": "calendar",
@@ -33,9 +45,15 @@ class HomeBarOptionsService {
     ]
 
     loadHomeBarOptionsBasedOnRole(roles) {
+        // Si no hay roles, devolver un array vacío
+        if (!roles || (Array.isArray(roles) && roles.length === 0)) {
+            return [];
+        }
+
+        // Si roles es un array
         if (Array.isArray(roles)) {
             return this.optionsHomeBar.filter(option => {
-                return roles.some(role => option.roles.includes(role));
+                return option.roles.some(role => roles.includes(role));
             });
         }
         // Si roles es un string único
@@ -44,7 +62,7 @@ class HomeBarOptionsService {
                 return option.roles.includes(roles);
             });
         }
-        // Si por alguna razón roles es undefined o null
+
         return [];
     }
 

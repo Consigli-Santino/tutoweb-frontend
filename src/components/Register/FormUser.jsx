@@ -160,7 +160,7 @@ const FormUser = () => {
                                         name="password"
                                         value={formData.password}
                                         onChange={handleChange}
-                                        placeholder="••••••"
+                                        placeholder="Ingrese la contraseña"
                                         disabled={isLoading}
                                         required
                                     />
