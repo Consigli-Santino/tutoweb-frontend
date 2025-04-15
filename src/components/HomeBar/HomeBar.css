@@ -1,0 +1,54 @@
+/* HomeBar main styles */
+.navbar {
+    background-color: #283048;
+}
+
+/* Icon button styles */
+.nav-icon-button {
+    transition: all 0.3s ease;
+}
+
+.nav-icon-button:hover,
+.nav-icon-button:active {
+    transform: scale(1.1);
+}
+
+/* Icon circle effect */
+.icon-circle {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    margin: 0 auto;
+    transition: all 0.3s ease;
+}
+
+.nav-icon-button:hover .icon-circle,
+.nav-icon-button:active .icon-circle {
+    background-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Additional float button style for reference */
+.btn-float-add {
+    background-color: #283048;
+    color: white;
+    width: 3.5rem;
+    height: 3.5rem;
+    bottom: 5rem;
+    right: 1.25rem;
+    z-index: 999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(40, 48, 72, 0.3);
+}
+
+.btn-float-add:hover {
+    transform: translateY(-3px) rotate(90deg);
+    box-shadow: 0 6px 15px rgba(40, 48, 72, 0.4);
+    color: black;
+}

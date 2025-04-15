@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
-import utnLogo from '../assets/UTN_logo.jpg'
-import {useNavigate} from "react-router-dom";
-
+import utnLogo from '../../assets/UTN_logo.jpg';
+import { useNavigate } from "react-router-dom";
+import _ from 'lodash';
+import './LoginButton.css';
+import LoginService from "../../services/LoginService.js";
 
 const Login = () => {
-
     const navigate = useNavigate();
+    const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
         email: '',
         password: ''
     });
+    const [error, setError] = useState('');
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -17,13 +20,33 @@ const Login = () => {
             ...prevState,
             [name]: value
         }));
+        // Limpiar el error cuando el usuario comienza a escribir
+        if (error) setError('')
+        ;
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        navigate('/home');
-        // Aquí iría la lógica de autenticación
-        console.log('Datos enviados:', formData);
+        debugger
+        setIsLoading(true);
+        setError('');
+        try {
+            const result = await LoginService.login(formData.email, formData.password);
+
+            if (result.success) {
+                // Login exitoso
+                localStorage.setItem('token', result.data.access_token);
+                navigate('/home');
+            } else {
+                // Error en el login
+                setError(result.error);
+            }
+        } catch (error) {
+            console.error('Error inesperado:', error);
+            setError('Ocurrió un error inesperado. Intente nuevamente.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -55,6 +78,7 @@ const Login = () => {
                                     value={formData.email}
                                     onChange={handleChange}
                                     placeholder="Ingrese su correo institucional"
+                                    disabled={isLoading}
                                 />
                             </div>
                             <div className="mb-4">
@@ -66,14 +90,31 @@ const Login = () => {
                                     value={formData.password}
                                     onChange={handleChange}
                                     placeholder="••••••"
+                                    disabled={isLoading}
                                 />
                             </div>
-                            <button type="submit" className="btn btn-dark w-100 py-2 mb-3 rounded-3">
-                                Iniciar Sesión
+                            <button
+                                type="submit"
+                                className="btn w-100 py-2 mb-3 rounded-3"
+                                style={{backgroundColor: '#283048', color: 'white'}}
+                                disabled={isLoading}
+                            >
+                                <div className="login-button-content">
+                                    {isLoading && <span className="login-button-spinner"></span>}
+                                    Iniciar Sesión
+                                </div>
                             </button>
+
+                            {/* Mensaje de error */}
+                            {error && (
+                                <div className="alert alert-danger py-2 text-center mb-3">
+                                    {error}
+                                </div>
+                            )}
+
                             <div className="text-center">
                                 <a href="#" className="text-muted small d-block mb-2">¿Olvidaste la contraseña?</a>
-                                <a href="#" className="text-muted small">Registrarse</a>
+                                <a href="/register" className="text-muted small">Registrarse</a>
                             </div>
                         </form>
                     </div>
