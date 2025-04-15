@@ -11,10 +11,12 @@ import Clasess from "./components/Clases/Clasess.jsx";
 import Users from "./components/Admin/Users.jsx";
 import AppLayout from './components/Layout/AppLayout.jsx';
 import FormNewUser from './components/Admin/FormNewUser.jsx';
+import {EntidadesProvider} from "./context/EntidadesContext.jsx";
 
 function App() {
     return (
         <AuthProvider>
+            <EntidadesProvider>
             <BrowserRouter>
                 <Routes>
                     {/* Rutas públicas (sin navbar/homebar) */}
@@ -61,6 +63,7 @@ function App() {
                     </Route>
                 </Routes>
             </BrowserRouter>
+            </EntidadesProvider>
         </AuthProvider>
     );
 }

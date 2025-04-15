@@ -2,8 +2,12 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useNavigate, useParams } from "react-router-dom";
 import _ from 'lodash';
 import '../Login/LoginButton.css';
+import { useEntidades } from "../../context/EntidadesContext.jsx";
 
 const FormNewUser = () => {
+    const {
+        carreras
+    } = useEntidades();
     const navigate = useNavigate();
     const { id } = useParams(); // Capturar el ID de la URL si estamos en modo edición
     const [isLoading, setIsLoading] = useState(false);
@@ -35,7 +39,7 @@ const FormNewUser = () => {
                 throw new Error('No se encontró token de autenticación');
             }
 
-            const response = await fetch(`http://localhost:7000/usuarios/${id}`, {
+            const response = await fetch(`http://localhost:7000/usuario/${id}`, {
                 method: 'GET',
                 headers: {
                     'accept': 'application/json',
@@ -135,8 +139,8 @@ const FormNewUser = () => {
                 }
 
                 const url = id
-                    ? `http://localhost:7000/usuarios/${id}`
-                    : 'http://localhost:7000/usuarios';
+                    ? `http://localhost:7000/usuario/${id}`
+                    : 'http://localhost:7000/usuario';
 
                 const method = id ? 'PUT' : 'POST';
 
@@ -247,12 +251,11 @@ const FormNewUser = () => {
                                     required
                                 >
                                     <option value="" disabled>Seleccione una carrera</option>
-                                    <option value="1">Tecnicatura en Programación</option>
-                                    <option value="2">Ingeniería en Sistemas de Información</option>
-                                    <option value="3">Ingeniería Mecánica</option>
-                                    <option value="4">Ingeniería Electrónica</option>
-                                    <option value="5">Ingeniería Química</option>
-                                    <option value="6">Ingeniería Civil</option>
+                                    {carreras.map(carrera => (
+                                        <option key={carrera.id} value={carrera.id}>
+                                            {carrera.nombre}
+                                        </option>
+                                    ))}
                                 </select>
                             </div>
                         </div>

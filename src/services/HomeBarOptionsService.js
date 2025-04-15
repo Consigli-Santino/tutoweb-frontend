@@ -7,12 +7,6 @@ class HomeBarOptionsService {
             "path": "/home"
         },
         {
-            "icon": "building-fill",
-            "name": "Carreras",
-            "roles": ["superAdmin"],
-            "path": "/carriers"
-        },
-        {
             "icon": "folder",
             "name": "Materias",
             "roles": ["alumno", "alumno&profesor"],

@@ -7,6 +7,12 @@ class SidebarOptionsService {
             "path": "/form-user"
         },
         {
+            "icon": "building-fill",
+            "name": "Carreras",
+            "roles": ["superAdmin"],
+            "path": "/carriers"
+        },
+        {
            "icon": "mortarboard",
             "name": "Quiero ser Profe",
             "roles": ["alumno", "alumno&profesor", "superAdmin"],
