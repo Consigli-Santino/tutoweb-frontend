@@ -1,3 +1,4 @@
+/* Animación para la campana de notificación */
 @keyframes bellShake {
     0% { transform: rotate(0); }
     15% { transform: rotate(10deg); }
@@ -12,4 +13,35 @@
     animation: bellShake 0.5s cubic-bezier(.36,.07,.19,.97) both;
     transform-origin: top center;
     display: inline-block;
+}
+
+/* Estilos adicionales para el sidebar */
+.offcanvas-body {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* Asegurar que el contenido del sidebar ocupe todo el espacio disponible */
+.offcanvas {
+    height: 100vh;
+}
+
+/* Ajustes responsivos para el sidebar */
+@media (max-width: 576px) {
+    #profileSidebar {
+        max-width: 75% !important; /* Menor ancho en móviles pequeños */
+    }
+}
+
+@media (min-width: 577px) and (max-width: 768px) {
+    #profileSidebar {
+        max-width: 65% !important; /* Menor ancho en tablets */
+    }
+}
+
+@media (min-width: 769px) {
+    #profileSidebar {
+        max-width: 280px !important; /* Ancho fijo en desktop */
+    }
 }

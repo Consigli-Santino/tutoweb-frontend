@@ -3,10 +3,12 @@ import { useNavigate, useParams } from "react-router-dom";
 import _ from 'lodash';
 import '../Login/LoginButton.css';
 import { useEntidades } from "../../context/EntidadesContext.jsx";
+import CustomSelect from '../../components/CustomInputs/CustomSelect.jsx'; // Importamos nuestro componente personalizado
 
 const FormNewUser = () => {
     const {
-        carreras
+        carreras,
+        roles
     } = useEntidades();
     const navigate = useNavigate();
     const { id } = useParams(); // Capturar el ID de la URL si estamos en modo edición
@@ -21,7 +23,8 @@ const FormNewUser = () => {
         confirmPassword: '',
         foto_perfil: null,
         es_tutor: false,
-        carrera_id: ''
+        carrera_id: '',
+        rol_id: ''
     });
 
     // Si hay un ID, cargar los datos del usuario para edición
@@ -64,7 +67,8 @@ const FormNewUser = () => {
                     es_tutor: data.data.es_tutor || false,
                     carrera_id: data.data.carreras && data.data.carreras.length > 0
                         ? data.data.carreras[0].id.toString()
-                        : ''
+                        : '',
+                    rol_id: data.data.rol ? data.data.rol.id.toString() : ''
                 });
 
                 // Si hay una foto de perfil, mostrar vista previa
@@ -242,21 +246,17 @@ const FormNewUser = () => {
                             </div>
                             <div className="col-md-6 mb-2">
                                 <label className="form-label text-muted small mb-1">CARRERA</label>
-                                <select
-                                    className="form-select form-select-sm bg-light border-0 py-2 rounded-3"
+                                <CustomSelect
                                     name="carrera_id"
                                     value={formData.carrera_id}
                                     onChange={handleChange}
+                                    options={carreras}
+                                    placeholder="Seleccione una carrera"
                                     disabled={isLoading}
                                     required
-                                >
-                                    <option value="" disabled>Seleccione una carrera</option>
-                                    {carreras.map(carrera => (
-                                        <option key={carrera.id} value={carrera.id}>
-                                            {carrera.nombre}
-                                        </option>
-                                    ))}
-                                </select>
+                                    isSearchable={true}
+                                    variant="light"
+                                />
                             </div>
                         </div>
 
@@ -317,21 +317,18 @@ const FormNewUser = () => {
                                     />
                                 </div>
                             </div>
-                            <div className="col-md-4 mb-2 d-flex align-items-end">
-                                <div className="form-check mb-1 mt-2">
-                                    <input
-                                        type="checkbox"
-                                        className="form-check-input"
-                                        id="rolCheck"
-                                        name="es_tutor"
-                                        checked={formData.es_tutor}
-                                        onChange={handleChange}
-                                        disabled={isLoading}
-                                    />
-                                    <label className="form-check-label text-muted small" htmlFor="rolCheck">
-                                        Es tutor
-                                    </label>
-                                </div>
+                            <div className="col-md-4 mb-2">
+                                <label className="form-label text-muted small mb-1">ROL</label>
+                                <CustomSelect
+                                    name="rol_id"
+                                    value={formData.rol_id}
+                                    onChange={handleChange}
+                                    options={roles}
+                                    placeholder="Seleccione un rol"
+                                    disabled={isLoading}
+                                    isSearchable={true}
+                                    variant="light"
+                                />
                             </div>
                         </div>
 

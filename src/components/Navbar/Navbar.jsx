@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import {Link, useNavigate} from 'react-router-dom';
 import utnLogo from '../../assets/UTN_logo.jpg';
 import './Navbar.css';
 
 
 const Navbar = ({ userOptions = [] }) => {
+    const navigate = useNavigate();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const sidebarRef = useRef(null);
 
@@ -37,14 +38,6 @@ const Navbar = ({ userOptions = [] }) => {
                         <i className="bi bi-person-circle fs-4"></i>
                     </button>
 
-                    {/* Logo central
-                    <div className="navbar-brand mx-auto d-flex align-items-center">
-                        <div className="bg-white rounded-3 p-1 me-2" style={{width: '40px', height: '40px'}}>
-                            <img src={utnLogo} alt="Logo UTN" className="img-fluid" />
-                        </div>
-                        <span className="fw-bold d-none d-sm-inline">TutoWeb</span>
-                    </div>
-                     */}
                     {/* Notificaciones a la derecha */}
                     <div className="ms-auto">
                         <button className="btn btn-link text-white border-0 p-0">
@@ -62,7 +55,8 @@ const Navbar = ({ userOptions = [] }) => {
                 id="profileSidebar"
                 style={{
                     visibility: sidebarOpen ? 'visible' : 'hidden',
-                    maxWidth: '280px'
+                    maxWidth: '85%', /* Porcentaje para dispositivos móviles */
+                    width: 'auto'
                 }}
             >
                 <div className="offcanvas-header text-white" style={{ backgroundColor: '#283048' }}>
@@ -80,8 +74,8 @@ const Navbar = ({ userOptions = [] }) => {
                     ></button>
                 </div>
 
-                <div className="offcanvas-body p-0">
-                    <div className="p-3">
+                <div className="offcanvas-body d-flex flex-column p-0">
+                    <div className="p-3 flex-grow-1">
                         <p className="text-muted small mb-2">MENÚ</p>
                         <div className="list-group list-group-flush">
                             {userOptions.map((option) => (
@@ -96,6 +90,20 @@ const Navbar = ({ userOptions = [] }) => {
                                 </Link>
                             ))}
                         </div>
+                    </div>
+
+                    {/* Botón de cerrar sesión al fondo del sidebar */}
+                    <div className="mt-auto p-3 border-top">
+                        <button
+                            className="btn btn-danger w-100 d-flex align-items-center justify-content-center"
+                            onClick={() => {
+                                localStorage.clear()
+                                navigate('login')
+                            }}
+                        >
+                            <i className="bi bi-box-arrow-right me-2"></i>
+                            Cerrar sesión
+                        </button>
                     </div>
                 </div>
             </div>

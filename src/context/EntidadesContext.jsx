@@ -42,6 +42,7 @@ export const EntidadesProvider = ({ children }) => {
 
             // Cargar materias
             const materiasData = await ApiService.getMaterias();
+            console.log(materiasData);
             if (materiasData.success) {
                 setMaterias(materiasData.data);
             }

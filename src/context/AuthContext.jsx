@@ -46,7 +46,6 @@ export const AuthProvider = ({ children }) => {
                 );
             }
             console.log('Roles del usuario:', roles);
-            debugger
             const sideBarOptions = SideBarOptionsService.getOptions(roles)
             const homeBarOptions = HomeBarOptionsService.getOptions(roles);
             const routesSideBar = sideBarOptions
