@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [availableRoutesSideBar, setAvailableRoutesSideBar] = useState([]);
     const [availableRoutesHomeBar, setAvailableRoutesHomeBar] = useState([]);
-    const loginUrl = import.meta.env.VITE_LOGIN_TUTOWEB;
+    const loginUrl = import.meta.env.VITE_LOGIN_URL;
 
     const loadUserFromToken = () => {
         const token = localStorage.getItem('token');

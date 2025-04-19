@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {Link, useNavigate} from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';  // Import useAuth explicitly
 import utnLogo from '../../assets/UTN_logo.jpg';
 import './Navbar.css';
 
 
 const Navbar = ({ userOptions = [] }) => {
     const navigate = useNavigate();
+    const { logout } = useAuth();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const sidebarRef = useRef(null);
 
@@ -97,8 +99,7 @@ const Navbar = ({ userOptions = [] }) => {
                         <button
                             className="btn btn-danger w-100 d-flex align-items-center justify-content-center"
                             onClick={() => {
-                                localStorage.clear()
-                                navigate('login')
+                                logout();
                             }}
                         >
                             <i className="bi bi-box-arrow-right me-2"></i>
