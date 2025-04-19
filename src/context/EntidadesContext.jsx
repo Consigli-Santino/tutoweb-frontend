@@ -1,5 +1,5 @@
-// EntidadesContext.js
-import React, { createContext, useContext, useState, useEffect } from 'react';
+// EntidadesContext.jsx - Versión optimizada
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import ApiService from '../services/ApiService.js';
 
 // Crear el contexto
@@ -17,32 +17,44 @@ export const EntidadesProvider = ({ children }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    // Cargar datos comunes al iniciar
+    // Usar useRef para rastrear si ya se cargaron los datos
+    const initialDataLoaded = useRef(false);
+
+    // Cargar datos comunes solo una vez al iniciar
     useEffect(() => {
-        loadCommonData();
+        // Evitar cargar datos si ya han sido cargados
+        if (!initialDataLoaded.current) {
+            loadCommonData();
+            initialDataLoaded.current = true;
+        }
     }, []);
 
     // Función para cargar datos comunes
     const loadCommonData = async () => {
+        // Evitar iniciar otra carga si ya está en progreso
+        if (isLoading) return;
+
         setIsLoading(true);
         setError(null);
 
         try {
-            // Cargar carreras
-            const carrerasData = await ApiService.getCarreras();
+            // Cargar datos en paralelo para mejorar rendimiento
+            const [carrerasData, rolesData, materiasData] = await Promise.all([
+                ApiService.getCarreras(),
+                ApiService.getRoles(),
+                ApiService.getMaterias()
+            ]);
+
+            console.log("Datos cargados una sola vez");
+
             if (carrerasData.success) {
                 setCarreras(carrerasData.data);
             }
 
-            // Cargar roles
-            const rolesData = await ApiService.getRoles();
             if (rolesData.success) {
                 setRoles(rolesData.data);
             }
 
-            // Cargar materias
-            const materiasData = await ApiService.getMaterias();
-            console.log(materiasData);
             if (materiasData.success) {
                 setMaterias(materiasData.data);
             }
@@ -52,6 +64,12 @@ export const EntidadesProvider = ({ children }) => {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    // Función para forzar la recarga de datos si es necesario
+    const forceRefreshData = () => {
+        initialDataLoaded.current = false;
+        loadCommonData();
     };
 
     // Valor del contexto que se proveerá
@@ -73,7 +91,7 @@ export const EntidadesProvider = ({ children }) => {
         deleteUsuario: ApiService.deleteUsuario,
 
         // Método para recargar datos comunes
-        refreshCommonData: loadCommonData,
+        refreshCommonData: forceRefreshData,
     };
 
     return (

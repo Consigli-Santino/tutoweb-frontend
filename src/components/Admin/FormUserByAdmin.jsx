@@ -5,7 +5,7 @@ import '../Login/LoginButton.css';
 import { useEntidades } from "../../context/EntidadesContext.jsx";
 import CustomSelect from '../../components/CustomInputs/CustomSelect.jsx'; // Importamos nuestro componente personalizado
 
-const FormNewUser = () => {
+const FormUserByAdmin = () => {
     const {
         carreras,
         roles
@@ -65,15 +65,17 @@ const FormNewUser = () => {
                     confirmPassword: '',
                     foto_perfil: null,
                     es_tutor: data.data.es_tutor || false,
-                    carrera_id: data.data.carreras && data.data.carreras.length > 0
-                        ? data.data.carreras[0].id.toString()
-                        : '',
-                    rol_id: data.data.rol ? data.data.rol.id.toString() : ''
+                    carrera_id:data.data.carreras[0]?.id?.toString() || '',
+                    rol_id: data.data.rol?.id?.toString() || ''
                 });
 
                 // Si hay una foto de perfil, mostrar vista previa
-                if (data.data.foto_perfil && data.data.foto_perfil !== 'string') {
-                    setImagePreview(data.data.foto_perfil);
+                if (data.data.foto_perfil) {
+                    const imageUrl = data.data.foto_perfil.startsWith('http')
+                        ? data.data.foto_perfil
+                        : `http://localhost:7000${data.data.foto_perfil}`;
+
+                    setImagePreview(imageUrl);
                 }
             } else {
                 throw new Error(data.message || 'Error al obtener usuario');
@@ -364,4 +366,4 @@ const FormNewUser = () => {
     );
 };
 
-export default FormNewUser;
+export default FormUserByAdmin;

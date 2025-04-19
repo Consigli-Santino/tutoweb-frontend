@@ -1,18 +1,8 @@
-// ApiService.js
-const API_URL = 'http://localhost:7000';
-//TODO : Cambiar a la URL de PARA USAR ENVS
-/**
- * Clase para centralizar las llamadas a la API
- */
+const API_URL = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:7000').replace(/\/$/, '');
+// Removes any trailing slash from the base URL
+
 class ApiService {
-    /**
-     * Método genérico para realizar peticiones a la API
-     * @param {string} endpoint - La ruta del endpoint
-     * @param {string} method - El método HTTP (GET, POST, PUT, DELETE)
-     * @param {Object} body - El cuerpo de la petición (opcional)
-     * @returns {Promise<any>} - La respuesta de la API
-     */
-    static async fetchApi(endpoint, method = 'GET', body = null) {
+    static async fetchApi(endpoint, method = 'GET', body = null,) {
         try {
             const token = localStorage.getItem('token');
             if (!token) {

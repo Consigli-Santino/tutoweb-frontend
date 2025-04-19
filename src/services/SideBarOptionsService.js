@@ -15,7 +15,7 @@ class SidebarOptionsService {
         {
            "icon": "mortarboard",
             "name": "Quiero ser Profe",
-            "roles": ["alumno", "alumno&profesor", "superAdmin"],
+            "roles": ["alumno", "alumno&tutor", "superAdmin"],
             "path": "/want-to-be-teacher"
         }
     ]

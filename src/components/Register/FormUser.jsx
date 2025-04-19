@@ -1,13 +1,17 @@
-import React, { useState, useCallback } from 'react';
+import React, {useState, useCallback, useEffect} from 'react';
 import utnLogo from '../../assets/UTN_logo.jpg';
 import { useNavigate } from "react-router-dom";
 import _ from 'lodash';
 import '../Login/LoginButton.css';
+import CustomSelect from "../CustomInputs/CustomSelect.jsx";
 
 const FormUser = () => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [imagePreview, setImagePreview] = useState(null);
+    const [carreras, setCarreras] = useState([]);
+    const [roles, setRoles] = useState([]);
+
     const [formData, setFormData] = useState({
         nombre: '',
         apellido: '',
@@ -15,17 +19,31 @@ const FormUser = () => {
         password: '',
         confirmPassword: '',
         profileImage: null,
-        role: 'alumno',
-        carrera: ''
+        id_rol: '',
+        carrera_id: ''
     });
 
-    const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        setFormData(prevState => ({
-            ...prevState,
-            [name]: type === 'checkbox' ? (checked ? 'alumno&profesor' : 'alumno') : value
-        }));
-    };
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // Cargar carreras
+                const carrerasUrl = (import.meta.env.VITE_BACKEND_URL) + '/carreras/all';
+                const carrerasResponse = await fetch(carrerasUrl);
+                const carrerasData = await carrerasResponse.json();
+                setCarreras(carrerasData.data);
+
+                // Cargar roles
+                const rolesUrl = (import.meta.env.VITE_BACKEND_URL) + '/roles/all/register';
+                const rolesResponse = await fetch(rolesUrl);
+                debugger
+                const rolesData = await rolesResponse.json();
+                setRoles(rolesData.data);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        };
+        fetchData();
+    }, []);
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
@@ -44,7 +62,14 @@ const FormUser = () => {
         }
     };
 
-    // Using lodash debounce for the register function
+    const handleChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setFormData(prevState => ({
+            ...prevState,
+            [name]: type === 'checkbox' ? (checked ? 'alumno&profesor' : 'alumno') : value
+        }));
+    };
+
     const handleSubmit = useCallback(
         _.debounce((e) => {
             e.preventDefault();
@@ -57,12 +82,51 @@ const FormUser = () => {
                 return;
             }
 
-            // Simulate API call with a 500ms delay
-            setTimeout(() => {
-                console.log('Datos de registro enviados:', formData);
-                navigate('/login');
-                setIsLoading(false);
-            }, 500);
+            // Preparar FormData para enviar
+            const formDataToSend = new FormData();
+            formDataToSend.append('nombre', formData.nombre);
+            formDataToSend.append('apellido', formData.apellido);
+            formDataToSend.append('email', formData.email);
+            formDataToSend.append('password', formData.password);
+            formDataToSend.append('es_tutor', formData.role === 'alumno&profesor');
+
+            // Agregar el ID del rol seleccionado
+            formDataToSend.append('id_rol', formData.id_rol);
+
+            // Añadir ID de carrera como array
+            formDataToSend.append('id_carrera', [formData.carrera_id]);
+
+            // Añadir imagen si existe
+            if (formData.profileImage) {
+                formDataToSend.append('profile_image', formData.profileImage);
+            }
+
+            // Realizar la petición con FormData
+            fetch((import.meta.env.VITE_BACKEND_URL) + '/usuario/register-user', {
+                method: 'POST',
+                body: formDataToSend,
+                // No incluir Content-Type header, el navegador lo configura automáticamente
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(data => {
+                            throw new Error(data.detail || 'Error en el registro');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Registro exitoso:', data);
+                    alert('Usuario registrado correctamente');
+                    navigate('/login');
+                })
+                .catch(error => {
+                    console.error('Error en el registro:', error);
+                    alert(error.message || 'Error al registrar usuario');
+                })
+                .finally(() => {
+                    setIsLoading(false);
+                });
         }, 500, { leading: true, trailing: false }),
         [navigate, formData]
     );
@@ -132,22 +196,17 @@ const FormUser = () => {
                                 </div>
                                 <div className="col-md-6 mb-2">
                                     <label className="form-label text-muted small mb-1">CARRERA</label>
-                                    <select
-                                        className="form-select form-select-sm bg-light border-0 py-2 rounded-3"
-                                        name="carrera"
-                                        value={formData.carrera}
+                                    <CustomSelect
+                                        name="carrera_id"
+                                        value={formData.carrera_id}
                                         onChange={handleChange}
+                                        options={carreras}
+                                        placeholder="Seleccione una carrera"
                                         disabled={isLoading}
                                         required
-                                    >
-                                        <option value="" disabled>Seleccione su carrera</option>
-                                        <option value="ing_sistemas">Ingeniería en Sistemas de Información</option>
-                                        <option value="ing_mecanica">Ingeniería Mecánica</option>
-                                        <option value="ing_electronica">Ingeniería Electrónica</option>
-                                        <option value="ing_quimica">Ingeniería Química</option>
-                                        <option value="ing_civil">Ingeniería Civil</option>
-                                        <option value="ing_electrica">Ingeniería Eléctrica</option>
-                                    </select>
+                                        isSearchable={true}
+                                        variant="light"
+                                    />
                                 </div>
                             </div>
 
@@ -178,6 +237,21 @@ const FormUser = () => {
                                         required
                                     />
                                 </div>
+                            </div>
+
+                            <div className="col-12 mb-2">
+                                <label className="form-label text-muted small mb-1">¿QUÉ DESEAS SER?</label>
+                                <CustomSelect
+                                    name="id_rol"
+                                    value={formData.id_rol}
+                                    onChange={handleChange}
+                                    options={roles}
+                                    placeholder="Seleccione un rol"
+                                    disabled={isLoading}
+                                    required
+                                    isSearchable={true}
+                                    variant="light"
+                                />
                             </div>
 
                             <div className="row g-2 mb-2">
