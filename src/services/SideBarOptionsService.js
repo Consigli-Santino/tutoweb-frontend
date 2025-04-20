@@ -1,12 +1,6 @@
 class SidebarOptionsService {
     sideBarOptions = [
         {
-            "icon": "person-circle",
-            "name": "Mi Perfil",
-            "roles": ["guardia","superAdmin"],
-            "path": "/form-user"
-        },
-        {
             "icon": "building-fill",
             "name": "Carreras",
             "roles": ["superAdmin"],
