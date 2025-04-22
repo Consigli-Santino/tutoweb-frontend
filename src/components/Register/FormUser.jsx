@@ -163,32 +163,21 @@ const FormUser = () => {
             formDataToSend.append('apellido', formData.apellido);
             formDataToSend.append('email', formData.email);
 
-            // Solo incluir la contraseña si se está registrando o si se ha proporcionado una nueva
             if (!isEditing || formData.password) {
                 formDataToSend.append('password', formData.password);
             }
+            formDataToSend.append('id_rol', formData.id_rol);
 
-            // Agregar el ID del rol seleccionado
-            formDataToSend.append('rol_id', formData.id_rol);
+            formDataToSend.append('id_carrera', formData.carrera_id);
 
-            // Añadir ID de carrera
-            formDataToSend.append('carrera_id', formData.carrera_id);
-
-            // Añadir imagen si existe
             if (formData.foto_perfil) {
-                formDataToSend.append('foto_perfil', formData.foto_perfil);
+                formDataToSend.append('profile_image', formData.foto_perfil);
             }
 
-            // Email original para actualización
-            if (isEditing) {
-                formDataToSend.append('original_email', originalEmail);
-            }
 
-            // URL del endpoint según sea registro o edición
             const url = isEditing
-                ? `${import.meta.env.VITE_BACKEND_URL}/usuario`
+                ? `${import.meta.env.VITE_BACKEND_URL}/usuario/${originalEmail}/form`
                 : `${import.meta.env.VITE_BACKEND_URL}/usuario/register-user`;
-
             // Obtener token si está editando
             const headers = {};
             if (isEditing) {

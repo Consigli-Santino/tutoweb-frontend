@@ -39,10 +39,9 @@ export const EntidadesProvider = ({ children }) => {
             }
 
             const [carrerasData, materiasData, rolesData] = await Promise.all(requests);
-
             if (carrerasData.success) setCarreras(carrerasData.data);
             if (materiasData.success) setMaterias(materiasData.data);
-            if (rolesData?.success) setRoles(rolesData.data); // Check if rolesData exists
+            if (rolesData?.success) setRoles(rolesData.data);
         } catch (err) {
             console.error("Error cargando datos comunes:", err);
             setError("Error al cargar los datos básicos de la aplicación");
