@@ -1,5 +1,5 @@
 import React from 'react';
-import TutoresCarrusel from "../TutoresCarrusel/TutoresCarrusel.jsx";
+import TutoresCarrusel from "../tutors/TutoresCarrusel/TutoresCarrusel.jsx";
 
 const Home = () => {
     return(

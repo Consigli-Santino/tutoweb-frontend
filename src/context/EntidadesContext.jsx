@@ -15,12 +15,14 @@ export const EntidadesProvider = ({ children }) => {
     const [error, setError] = useState(null);
     const initialDataLoaded = useRef(false);
 
+    // En EntidadesContext.jsx
     useEffect(() => {
+        // Solo cargar si estamos autenticados, no estamos cargando y no hemos cargado los datos iniciales
         if (isAuthenticated && !loading && !initialDataLoaded.current) {
             loadCommonData();
             initialDataLoaded.current = true;
         }
-    }, [isAuthenticated, loading]); // Esperar a que el usuario esté autenticado
+    }, [isAuthenticated, loading]); // Elimina user de las dependencias si no es necesario
 
     const loadCommonData = async () => {
         if (isLoading) return;
@@ -31,9 +33,10 @@ export const EntidadesProvider = ({ children }) => {
         try {
             const requests = [
                 ApiService.getCarreras(),
-                ApiService.getMaterias()
+                ApiService.getMaterias(),
+                ApiService.getTutoresByCarrera(user.carreras[0]?.id),
             ];
-            debugger
+            // Solo cargar roles si el usuario no es "alumno" o "alumno&profesor"
             if (user?.roles[0] !== "alumno" && user?.roles[0] !== "alumno&profesor") {
                 requests.push(ApiService.getRoles());
             }
@@ -61,6 +64,8 @@ export const EntidadesProvider = ({ children }) => {
         materias,
         isLoading,
         error,
+        getMateriasByTutor: ApiService.getMateriasByTutor,
+        getTutoresByCarrera: ApiService.getTutoresByCarrera,
         getUsuarios: ApiService.getUsuarios,
         getCarreras: ApiService.getCarreras,
         getRoles: ApiService.getRoles,

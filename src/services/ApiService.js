@@ -44,6 +44,9 @@ class ApiService {
     static async getUsuarios() {
         return ApiService.fetchApi('/usuarios/all');
     }
+    static async getMateriasByTutor(id) {
+        return ApiService.fetchApi(`/materias/by/tutor/${id}`);
+    }
 
     static async getCarreras() {
         return ApiService.fetchApi('/carreras/all');
@@ -59,6 +62,10 @@ class ApiService {
 
     static async deleteUsuario(id) {
         return ApiService.fetchApi(`/usuario/${id}`, 'DELETE');
+    }
+
+    static getTutoresByCarrera(id) {
+        return ApiService.fetchApi(`/tutores/by/carrera/${id}`);
     }
 }
 

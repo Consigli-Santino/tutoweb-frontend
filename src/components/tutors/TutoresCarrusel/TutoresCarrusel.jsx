@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import { Link } from 'react-router-dom';
 import './TutoresCarrusel.css';
-import { useEntidades } from "../../context/EntidadesContext.jsx";
+import { useEntidades } from "../../../context/EntidadesContext.jsx";
+import useAuth from "../../../context/AuthContext.jsx";
 
 const TutoresCarrusel = () => {
-    const { getUsuarios } = useEntidades();
+    const { user } = useAuth();
+    const { getTutoresByCarrera } = useEntidades();
     const [tutores, setTutores] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -14,7 +16,7 @@ const TutoresCarrusel = () => {
     useEffect(() => {
         const fetchTutores = async () => {
             try {
-                const data = await getUsuarios();
+                const data = await getTutoresByCarrera(user.carreras[0]?.id);
                 if (data.success) {
                     setTutores(data.data);
                 } else {
@@ -29,7 +31,7 @@ const TutoresCarrusel = () => {
         };
 
         fetchTutores();
-    }, [getUsuarios]);
+    }, [getTutoresByCarrera]);
 
     // Efecto para rotación automática
     useEffect(() => {

@@ -11,6 +11,7 @@ import Clasess from "./components/Clases/Clasess.jsx";
 import Users from "./components/Admin/Users.jsx";
 import AppLayout from './components/Layout/AppLayout.jsx';
 import FormUserByAdmin from './components/Admin/FormUserByAdmin.jsx';
+import TutorsCRUDMaterias from "./components/tutors/TutorsMaterias/TutorsCRUDMaterias.jsx";
 
 function App() {
     return (
@@ -30,6 +31,11 @@ function App() {
                             <Route path="/home" element={
                                 <ProtectedRoute path="/home">
                                     <Home />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/subjects" element={
+                                <ProtectedRoute path="/subjects">
+                                    <TutorsCRUDMaterias/>
                                 </ProtectedRoute>
                             } />
                             <Route path="/clases" element={

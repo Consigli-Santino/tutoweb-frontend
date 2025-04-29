@@ -23,11 +23,11 @@
     overflow: hidden;
 }
 
-/* Imagen del tutor que cubre todo el contenedor */
 .tutor-img-compact {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    /* Modificado: Cambiar object-position para mostrar la parte superior de la imagen */
     object-position: center;
     display: block;
 }

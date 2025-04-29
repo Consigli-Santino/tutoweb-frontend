@@ -5,11 +5,13 @@ import _ from 'lodash';
 import '../Login/LoginButton.css';
 import CustomSelect from "../CustomInputs/CustomSelect.jsx";
 import { useAuth } from '../../context/AuthContext';
+import { useEntidades } from '../../context/EntidadesContext'; // Import the entidades context
 import Unauthorized from "../Unauthorized/Unauthorized.jsx";
 
 const FormUser = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { roles: contextRoles, carreras: contextCarreras, isLoading: contextLoading } = useEntidades(); // Get data from context
     const [searchParams] = useSearchParams();
     const emailParam = searchParams.get('email');
     const [error, setError] = useState(null);
@@ -27,32 +29,48 @@ const FormUser = () => {
         email: '',
         password: '',
         confirmPassword: '',
-        foto_perfil: null, // Cambiado de profileImage a foto_perfil
+        foto_perfil: null,
         id_rol: '',
         carrera_id: ''
     });
 
     useEffect(() => {
+        let isMounted = true;
+
         const fetchData = async () => {
             try {
-                // Cargar carreras
-                const carrerasUrl = (import.meta.env.VITE_BACKEND_URL) + '/carreras/all';
-                const carrerasResponse = await fetch(carrerasUrl);
-                const carrerasData = await carrerasResponse.json();
-                setCarreras(carrerasData.data);
+                // Carreras desde el contexto
+                if (contextCarreras && contextCarreras.length > 0) {
+                    setCarreras(contextCarreras);
+                } else {
+                    // Solo haz la petición si no tienes carreras en el contexto
+                    const carrerasUrl = (import.meta.env.VITE_BACKEND_URL) + '/carreras/all';
+                    const carrerasResponse = await fetch(carrerasUrl);
+                    if (isMounted) {
+                        const carrerasData = await carrerasResponse.json();
+                        setCarreras(carrerasData.data);
+                    }
+                }
 
-                // Cargar roles
-                const rolesUrl = (import.meta.env.VITE_BACKEND_URL) + '/roles/all/register';
-                const rolesResponse = await fetch(rolesUrl);
-                const rolesData = await rolesResponse.json();
-                setRoles(rolesData.data);
+                // Roles desde el contexto para superadmin
+                const isSuperAdmin = user && user.roles && user.roles.includes('superAdmin');
+                if (isSuperAdmin && contextRoles && contextRoles.length > 0) {
+                    setRoles(contextRoles);
+                } else {
+                    // Solo haz la petición si no tienes roles en el contexto
+                    const rolesUrl = (import.meta.env.VITE_BACKEND_URL) + '/roles/all/register';
+                    const rolesResponse = await fetch(rolesUrl);
+                    if (isMounted) {
+                        const rolesData = await rolesResponse.json();
+                        setRoles(rolesData.data);
+                    }
+                }
 
-                // Si hay un email como parámetro, intentar cargar los datos del usuario
-                if (emailParam) {
+                // Cargar datos del usuario solo si hay un email en parámetros
+                if (emailParam && isMounted) {
                     setIsEditing(true);
                     setOriginalEmail(emailParam);
 
-                    // Verificar si el usuario actual tiene permiso para editar este perfil
                     if (user && user.email !== emailParam) {
                         setIsAuthorized(false);
                     } else {
@@ -63,16 +81,24 @@ const FormUser = () => {
                 console.error('Error fetching data:', error);
             }
         };
+
         fetchData();
-    }, [emailParam, user]);
+
+        // Limpieza para evitar actualizar estado en componentes desmontados
+        return () => {
+            isMounted = false;
+        };
+    }, [emailParam]); // Solo dependencia del email para recuperar datos del usuario
 
     const fetchUserData = async (email) => {
+        if (isLoading) return;
+
         try {
             setIsLoading(true);
-            // Endpoint para obtener datos del usuario por email
+
             const userUrl = `${import.meta.env.VITE_BACKEND_URL}/usuario/by-email/${email}`;
 
-            // Obtener el token del localStorage
+            // Obtener token de localStorage
             const token = localStorage.getItem('token');
 
             const response = await fetch(userUrl, {
@@ -88,14 +114,14 @@ const FormUser = () => {
             const userData = await response.json();
             const user = userData.data;
 
-            // Actualizar el estado del formulario con los datos del usuario
+            // Actualizar estado del formulario con datos del usuario
             setFormData({
                 nombre: user.nombre || '',
                 apellido: user.apellido || '',
                 email: user.email || '',
                 password: '',
                 confirmPassword: '',
-                profileImage: null,
+                foto_perfil: null, // Corrige el nombre de la propiedad
                 id_rol: user.rol?.id?.toString() || '',
                 carrera_id: user.carreras?.[0]?.id?.toString() || ''
             });
@@ -120,7 +146,7 @@ const FormUser = () => {
         if (file) {
             setFormData(prevState => ({
                 ...prevState,
-                foto_perfil: file // Cambiamos el nombre de la propiedad a foto_perfil para que coincida con el backend
+                foto_perfil: file
             }));
 
             // Create preview of the image
@@ -140,86 +166,88 @@ const FormUser = () => {
         }));
     };
 
-    const handleSubmit = useCallback(
-        _.debounce((e) => {
-            e.preventDefault();
-            setIsLoading(true);
+    const handleSubmit = (e) => {
+        e.preventDefault();
 
-            // Validar contraseñas solo si se está registrando o si se están cambiando
-            if (!isEditing || (formData.password && formData.confirmPassword)) {
-                if (formData.password !== formData.confirmPassword) {
-                    setError("Las contraseñas no coinciden");
-                    setIsLoading(false);
-                    return;
+        // Evitar múltiples envíos
+        if (isLoading) {
+            return;
+        }
+
+        setIsLoading(true);
+
+        // Validar contraseñas solo si se está registrando o si se están cambiando
+        if (!isEditing || (formData.password && formData.confirmPassword)) {
+            if (formData.password !== formData.confirmPassword) {
+                setError("Las contraseñas no coinciden");
+                setIsLoading(false);
+                return;
+            }
+        }
+
+        // Limpiar errores previos
+        setError(null);
+
+        // Preparar FormData para enviar
+        const formDataToSend = new FormData();
+        formDataToSend.append('nombre', formData.nombre);
+        formDataToSend.append('apellido', formData.apellido);
+        formDataToSend.append('email', formData.email);
+
+        if (!isEditing || formData.password) {
+            formDataToSend.append('password', formData.password);
+        }
+        formDataToSend.append('id_rol', formData.id_rol);
+        formDataToSend.append('id_carrera', formData.carrera_id);
+
+        if (formData.foto_perfil) {
+            formDataToSend.append('profile_image', formData.foto_perfil);
+        }
+
+        const url = isEditing
+            ? `${import.meta.env.VITE_BACKEND_URL}/usuario/${originalEmail}/form`
+            : `${import.meta.env.VITE_BACKEND_URL}/usuario/register-user`;
+
+        // Obtener token si se está editando
+        const headers = {};
+        if (isEditing) {
+            const token = localStorage.getItem('token');
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+        }
+
+        // Hacer la petición
+        fetch(url, {
+            method: isEditing ? 'PUT' : 'POST',
+            body: formDataToSend,
+            headers: headers
+        })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.detail || data.message || (isEditing ? 'Error al actualizar' : 'Error en el registro'));
+                    });
                 }
-            }
-
-            // Limpiar errores anteriores
-            setError(null);
-
-            // Preparar FormData para enviar
-            const formDataToSend = new FormData();
-            formDataToSend.append('nombre', formData.nombre);
-            formDataToSend.append('apellido', formData.apellido);
-            formDataToSend.append('email', formData.email);
-
-            if (!isEditing || formData.password) {
-                formDataToSend.append('password', formData.password);
-            }
-            formDataToSend.append('id_rol', formData.id_rol);
-
-            formDataToSend.append('id_carrera', formData.carrera_id);
-
-            if (formData.foto_perfil) {
-                formDataToSend.append('profile_image', formData.foto_perfil);
-            }
-
-
-            const url = isEditing
-                ? `${import.meta.env.VITE_BACKEND_URL}/usuario/${originalEmail}/form`
-                : `${import.meta.env.VITE_BACKEND_URL}/usuario/register-user`;
-            // Obtener token si está editando
-            const headers = {};
-            if (isEditing) {
-                const token = localStorage.getItem('token');
-                if (token) {
-                    headers['Authorization'] = `Bearer ${token}`;
-                }
-            }
-
-            // Realizar la petición
-            fetch(url, {
-                method: isEditing ? 'PUT' : 'POST',
-                body: formDataToSend,
-                headers: headers
+                return response.json();
             })
-                .then(response => {
-                    if (!response.ok) {
-                        return response.json().then(data => {
-                            throw new Error(data.detail || data.message || (isEditing ? 'Error al actualizar' : 'Error en el registro'));
-                        });
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log(isEditing ? 'Actualización exitosa:' : 'Registro exitoso:', data);
-                    if (data.success) {
-                        alert(isEditing ? 'Usuario actualizado correctamente' : 'Usuario registrado correctamente');
-                        navigate(isEditing ? '/home' : '/login');
-                    } else {
-                        setError(data.message || (isEditing ? 'Error al actualizar usuario' : 'Error al registrar usuario'));
-                    }
-                })
-                .catch(error => {
-                    console.error(isEditing ? 'Error en la actualización:' : 'Error en el registro:', error);
-                    setError(error.message || (isEditing ? 'Error al actualizar usuario' : 'Error al registrar usuario'));
-                })
-                .finally(() => {
-                    setIsLoading(false);
-                });
-        }, 500, { leading: true, trailing: false }),
-        [navigate, formData, isEditing, originalEmail]
-    );
+            .then(data => {
+                console.log(isEditing ? 'Actualización exitosa:' : 'Registro exitoso:', data);
+                if (data.success) {
+                    alert(isEditing ? 'Usuario actualizado correctamente' : 'Usuario registrado correctamente');
+                    navigate(isEditing ? '/home' : '/login');
+                } else {
+                    setError(data.message || (isEditing ? 'Error al actualizar usuario' : 'Error al registrar usuario'));
+                }
+            })
+            .catch(error => {
+                console.error(isEditing ? 'Error en la actualización:' : 'Error en el registro:', error);
+                setError(error.message || (isEditing ? 'Error al actualizar usuario' : 'Error al registrar usuario'));
+            })
+            .finally(() => {
+                setIsLoading(false);
+            });
+    };
 
     if (!isAuthorized) {
         return <Unauthorized />;
@@ -229,7 +257,7 @@ const FormUser = () => {
         <div className="container-fluid min-vh-100 d-flex align-items-center justify-content-center px-3 py-2">
             <div className="login-wrapper w-100 mx-auto" style={{maxWidth: '800px'}}>
                 <div className="card shadow border-0 rounded-4 overflow-hidden">
-                    {/* Cabecera con fondo azul */}
+                    {/* Header with blue background */}
                     <div className="card-header border-0 text-center p-3 p-md-4" style={{backgroundColor: '#283048'}}>
                         <div className="d-flex justify-content-center mb-2">
                             <div className="bg-white rounded-3 p-2" style={{width: '60px', height: '60px'}}>
@@ -239,7 +267,7 @@ const FormUser = () => {
                         <div className="text-white fw-bold fs-4">TutoWeb</div>
                     </div>
 
-                    {/* Contenido del formulario */}
+                    {/* Form content */}
                     <div className="card-body p-3 p-md-4">
                         <h1 className="fw-bold text-center fs-4 mb-1">
                             {isEditing ? 'Editar Perfil' : 'Registro'}
@@ -294,7 +322,7 @@ const FormUser = () => {
                                         value={formData.email}
                                         onChange={handleChange}
                                         placeholder="Ingrese su correo institucional"
-                                        disabled={isLoading || isEditing} // Deshabilitar si está editando
+                                        disabled={isLoading || isEditing} // Disable if editing
                                         required
                                     />
                                 </div>
@@ -327,7 +355,7 @@ const FormUser = () => {
                                         onChange={handleChange}
                                         placeholder={isEditing ? "Nueva contraseña (opcional)" : "Ingrese la contraseña"}
                                         disabled={isLoading}
-                                        required={!isEditing} // Solo requerido para nuevo registro
+                                        required={!isEditing} // Only required for new registration
                                     />
                                 </div>
                                 <div className="col-md-6 mb-2">
@@ -340,7 +368,7 @@ const FormUser = () => {
                                         onChange={handleChange}
                                         placeholder="••••••"
                                         disabled={isLoading}
-                                        required={!isEditing || formData.password !== ''} // Requerido si no está editando o si ha cambiado la contraseña
+                                        required={!isEditing || formData.password !== ''} // Required if not editing or if password has been changed
                                     />
                                 </div>
                             </div>

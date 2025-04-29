@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import '../Login/LoginButton.css';
-import './Users.css';
+import '../../commonTables.css';
 import { useEntidades } from '../../context/EntidadesContext.jsx';
 import CustomSelect from '../../components/CustomInputs/CustomSelect.jsx'; // Importamos nuestro componente personalizado
 
