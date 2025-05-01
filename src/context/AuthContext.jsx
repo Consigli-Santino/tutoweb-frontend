@@ -61,6 +61,7 @@ export const AuthProvider = ({ children }) => {
                 .map(option => option.path);
 
             setUser({
+                id: decodedToken.user_data.id || '',
                 nombre: decodedToken.user_data.nombre || '',
                 apellido: decodedToken.user_data.apellido || '',
                 email: decodedToken.user_data.email || '',

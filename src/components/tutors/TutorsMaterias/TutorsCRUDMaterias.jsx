@@ -4,29 +4,26 @@ import { useEntidades } from '../../../context/EntidadesContext.jsx';
 import { useAuth } from '../../../context/AuthContext';
 import CustomSelect from '../../../components/CustomInputs/CustomSelect';
 import '../../../commonTables.css';
+import ApiService from '../../../services/ApiService'; // Importado directamente para las operaciones no expuestas por EntidadesContext
 
 const TutorsCRUDMaterias = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
     const {
-        getMateriasByTutor, // Esta función la implementarás después
+        getMateriasByTutor,
+        getMateriasByCarrera,
+        refreshCommonData,        // Para forzar recarga de datos después de cambios
     } = useEntidades();
 
     const carreraId = user.carreras[0]?.id; // Obtener el ID de la primera carrera del usuario
-
-    // Estados
-    const [allMaterias, setAllMaterias] = useState([]);
     const [tutorMaterias, setTutorMaterias] = useState([]);
+    const [materiasDisponibles, setMateriasDisponibles] = useState([]);
     const [filteredMaterias, setFilteredMaterias] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
-
-    // Filtros
     const [searchTerm, setSearchTerm] = useState('');
     const [añoPlanFilter, setAñoPlanFilter] = useState('');
-
-    // Años para filtrado
     const añosDisponibles = Array.from({ length: 10 }, (_, i) => ({
         id: (new Date().getFullYear() - i).toString(),
         nombre: (new Date().getFullYear() - i).toString()
@@ -34,35 +31,61 @@ const TutorsCRUDMaterias = () => {
 
     useEffect(() => {
         fetchData();
-    }, []);
+    }, [carreraId, ]); // Recargar cuando cambie la carrera o la lista de materias
 
     useEffect(() => {
         applyFilters();
-    }, [searchTerm, añoPlanFilter, allMaterias, tutorMaterias]);
+    }, [searchTerm, añoPlanFilter, materiasDisponibles]);
 
     const fetchData = async () => {
+        if (!carreraId) return;
+
         setIsLoading(true);
         setError(null);
 
         try {
-            // Obtener todas las materias
-            const materiasData = await getMateriasByTutor(carreraId);
-            if (materiasData) {
-                setAllMaterias(materiasData);
+            // Obtener las materias asignadas al usuario para esta carrera
+            const response = await getMateriasByTutor(user.id, carreraId);
+
+            if (response && response.success) {
+                // Procesar las materias asignadas
+                const materiasAsignadas = response.data
+                    .filter(item => item.materia) // Asegurar que materia existe
+                    .map(item => ({
+                        ...item.materia,
+                        relacionId: item.id,
+                        estado: item.estado
+                    }));
+
+                // Guardar las materias activas del tutor
+                setTutorMaterias(materiasAsignadas.filter(m => m.estado === true));
+
+                // Cambiar el nombre de la variable para evitar sobreescribir 'response'
+                const responseMaterias = await getMateriasByCarrera(carreraId);
+                if (responseMaterias && responseMaterias.success) {
+                    setFilteredMaterias(responseMaterias.data);
+                    setMateriasDisponibles(responseMaterias.data);
+                }
+                const allMateriasList = responseMaterias.data;
+                if (allMateriasList && allMateriasList.length > 0) {
+                    const materiasAsignadasIds = new Set(materiasAsignadas.map(m => m.id));
+                    const disponibles = allMateriasList
+                        .filter(m => m.carrera_id === carreraId && !materiasAsignadasIds.has(m.id));
+                    setMateriasDisponibles(disponibles);
+                }
+            } else {
+                throw new Error(response?.message || 'Error al obtener materias');
             }
         } catch (err) {
-            setError(err.message);
+            setError(`Error al cargar datos: ${err.message}`);
+            console.error("Error fetching data:", err);
         } finally {
             setIsLoading(false);
         }
     };
 
     const applyFilters = () => {
-        // Crear un conjunto con los IDs de las materias ya asignadas al tutor
-        const tutorMateriaIds = new Set(tutorMaterias.map(m => m.id));
-
-        // Filtrar materias no asignadas al tutor
-        let result = allMaterias.filter(materia => !tutorMateriaIds.has(materia.id));
+        let result = [...materiasDisponibles];
 
         if (searchTerm) {
             const searchTermLower = searchTerm.toLowerCase();
@@ -100,35 +123,36 @@ const TutorsCRUDMaterias = () => {
         setSuccess(null);
 
         try {
-            const response = await fetch(`/api/materias/in/tutor/${user.id}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ materia_id: materiaId }),
+            // Crear la relación materia-carrera-usuario usando ApiService directamente
+            const response = await ApiService.fetchApi('/materias-carrera-usuario/create', 'POST', {
+                estado: true,
+                usuario_id: user.id,
+                materia_id: materiaId,
+                carrera_id: carreraId
             });
 
-            const data = await response.json();
-
-            if (data.success) {
-                // Actualizar la lista de materias del tutor
-                const selectedMateria = allMaterias.find(m => m.id === materiaId);
-                setTutorMaterias([...tutorMaterias, selectedMateria]);
+            if (response.success) {
+                // Obtener el nombre de la materia para el mensaje de éxito
+                const selectedMateria = materiasDisponibles.find(m => m.id === materiaId);
                 setSuccess(`Materia "${selectedMateria.nombre}" añadida correctamente`);
 
                 // Limpiar el mensaje de éxito después de 3 segundos
                 setTimeout(() => setSuccess(null), 3000);
+
+                // Actualizar datos
+                fetchData();
             } else {
-                throw new Error(data.message || 'Error al añadir la materia');
+                throw new Error(response.message || 'Error al añadir la materia');
             }
         } catch (err) {
-            setError(err.message);
+            setError(`Error al añadir materia: ${err.message}`);
+            console.error("Error adding materia:", err);
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleRemoveMateria = async (materiaId) => {
+    const handleRemoveMateria = async (relacionId) => {
         if (!window.confirm('¿Está seguro que desea eliminar esta materia de su perfil?')) {
             return;
         }
@@ -138,28 +162,25 @@ const TutorsCRUDMaterias = () => {
         setSuccess(null);
 
         try {
-            const response = await fetch(`/api/materias/in/tutor/${user.id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ materia_id: materiaId }),
-            });
+            // Eliminar la relación materia-carrera-usuario usando ApiService directamente
+            const response = await ApiService.fetchApi(`/materias-carrera-usuario/${relacionId}`, 'DELETE');
 
-            const data = await response.json();
-
-            if (data.success) {
-                // Eliminar la materia de la lista del tutor
-                setTutorMaterias(tutorMaterias.filter(m => m.id !== materiaId));
-                setSuccess('Materia eliminada correctamente');
+            if (response.success) {
+                // Obtener el nombre de la materia para el mensaje de éxito
+                const materiaEliminada = tutorMaterias.find(m => m.relacionId === relacionId);
+                setSuccess(`Materia "${materiaEliminada?.nombre || ''}" eliminada correctamente`);
 
                 // Limpiar el mensaje de éxito después de 3 segundos
                 setTimeout(() => setSuccess(null), 3000);
+
+                // Actualizar datos
+                fetchData();
             } else {
-                throw new Error(data.message || 'Error al eliminar la materia');
+                throw new Error(response.message || 'Error al eliminar la materia');
             }
         } catch (err) {
-            setError(err.message);
+            setError(`Error al eliminar materia: ${err.message}`);
+            console.error("Error removing materia:", err);
         } finally {
             setIsLoading(false);
         }
@@ -208,10 +229,16 @@ const TutorsCRUDMaterias = () => {
                         </h2>
 
                         <div className="assigned-materias-container">
-                            {tutorMaterias.length > 0 ? (
+                            {isLoading ? (
+                                <div className="d-flex justify-content-center p-5">
+                                    <div className="spinner-border text-primary" role="status">
+                                        <span className="visually-hidden">Cargando...</span>
+                                    </div>
+                                </div>
+                            ) : tutorMaterias.length > 0 ? (
                                 <div className="row g-3">
                                     {tutorMaterias.map((materia) => (
-                                        <div key={materia.id} className="col-12 col-md-6 col-lg-4">
+                                        <div key={materia.relacionId} className="col-12 col-md-6 col-lg-4">
                                             <div className="materia-card">
                                                 <div className="d-flex justify-content-between align-items-start">
                                                     <div>
@@ -224,7 +251,7 @@ const TutorsCRUDMaterias = () => {
                                                     </div>
                                                     <button
                                                         className="btn-remove-materia"
-                                                        onClick={() => handleRemoveMateria(materia.id)}
+                                                        onClick={() => handleRemoveMateria(materia.relacionId)}
                                                         title="Eliminar materia"
                                                     >
                                                         <i className="bi bi-x-circle"></i>
@@ -339,13 +366,18 @@ const TutorsCRUDMaterias = () => {
                             ) : (
                                 <div className="empty-state">
                                     <i className="bi bi-search empty-state-icon"></i>
-                                    <p>No hay materias disponibles</p>
-                                    <button
-                                        className="btn btn-sm mt-2 app-primary"
-                                        onClick={clearFilters}
-                                    >
-                                        Limpiar filtros
-                                    </button>
+                                    <p>{materiasDisponibles.length === 0 && !isLoading ?
+                                        "No hay materias disponibles para agregar" :
+                                        "No se encontraron materias con los filtros actuales"}
+                                    </p>
+                                    {searchTerm || añoPlanFilter ? (
+                                        <button
+                                            className="btn btn-sm mt-2 app-primary"
+                                            onClick={clearFilters}
+                                        >
+                                            Limpiar filtros
+                                        </button>
+                                    ) : null}
                                 </div>
                             )}
                         </div>

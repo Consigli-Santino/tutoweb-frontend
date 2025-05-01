@@ -34,6 +34,7 @@ export const EntidadesProvider = ({ children }) => {
             const requests = [
                 ApiService.getCarreras(),
                 ApiService.getMaterias(),
+                ApiService.getMateriasByCarrera(user.carreras[0]?.id),
                 ApiService.getTutoresByCarrera(user.carreras[0]?.id),
             ];
             // Solo cargar roles si el usuario no es "alumno" o "alumno&profesor"
@@ -64,6 +65,7 @@ export const EntidadesProvider = ({ children }) => {
         materias,
         isLoading,
         error,
+        getMateriasByCarrera: ApiService.getMateriasByCarrera,
         getMateriasByTutor: ApiService.getMateriasByTutor,
         getTutoresByCarrera: ApiService.getTutoresByCarrera,
         getUsuarios: ApiService.getUsuarios,

@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import { Link } from 'react-router-dom';
 import './TutoresCarrusel.css';
 import { useEntidades } from "../../../context/EntidadesContext.jsx";
@@ -11,6 +11,26 @@ const TutoresCarrusel = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [previousIndex, setPreviousIndex] = useState(null);
+    const [isTransitioning, setIsTransitioning] = useState(false);
+
+    const timerRef = useRef(null);
+    const handlePrevTutor = () => {
+        if (isTransitioning) return;
+        setPreviousIndex(currentIndex);
+        const prevIndex = currentIndex === 0 ? tutores.length - 1 : currentIndex - 1;
+        setIsTransitioning(true);
+        setCurrentIndex(prevIndex);
+    };
+
+    // Manejador para cambiar manualmente al siguiente tutor
+    const handleNextTutor = () => {
+        if (isTransitioning) return;
+        setPreviousIndex(currentIndex);
+        const nextIndex = currentIndex === tutores.length - 1 ? 0 : currentIndex + 1;
+        setIsTransitioning(true);
+        setCurrentIndex(nextIndex);
+    };
 
     // Cargar tutores al montar el componente
     useEffect(() => {
@@ -31,22 +51,53 @@ const TutoresCarrusel = () => {
         };
 
         fetchTutores();
-    }, [getTutoresByCarrera]);
+    }, [getTutoresByCarrera, user.carreras]);
 
-    // Efecto para rotación automática
+    // Efecto para detectar el final de la transición
     useEffect(() => {
-        // Solo configurar el intervalo si hay más de un tutor
+        if (isTransitioning) {
+            // Finalizar la transición después de 800ms
+            const timer = setTimeout(() => {
+                setIsTransitioning(false);
+                setPreviousIndex(null);
+            }, 800);
+
+            return () => clearTimeout(timer);
+        }
+    }, [isTransitioning]);
+
+    // Efecto para rotación automática con transición suave
+    useEffect(() => {
+        // Solo configurar el intervalo si hay más de un tutor y no estamos en transición
         if (tutores.length <= 1) return;
 
-        const interval = setInterval(() => {
-            setCurrentIndex(prevIndex =>
-                prevIndex === tutores.length - 1 ? 0 : prevIndex + 1
-            );
-        }, 5000);
+        // Limpiar cualquier temporizador previo
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+        }
+
+        // Intervalo para cambiar tutores (7 segundos)
+        timerRef.current = setInterval(() => {
+            if (!isTransitioning) {
+                // Guardar el índice actual como el anterior
+                setPreviousIndex(currentIndex);
+
+                // Determinar índice siguiente
+                const nextIndex = currentIndex === tutores.length - 1 ? 0 : currentIndex + 1;
+
+                // Iniciar transición
+                setIsTransitioning(true);
+                setCurrentIndex(nextIndex);
+            }
+        }, 7000);
 
         // Limpiar intervalo al desmontar
-        return () => clearInterval(interval);
-    }, [tutores.length]);
+        return () => {
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+            }
+        };
+    }, [tutores.length, currentIndex, isTransitioning]);
 
     const getImageUrl = (fotoPath) => {
         if (!fotoPath) return 'https://via.placeholder.com/400';
@@ -113,81 +164,116 @@ const TutoresCarrusel = () => {
     const tutor = tutores[currentIndex];
 
     return (
-        <div className="tutores-carrusel-compact my-2">
-            <h6 className="fw-bold text-center mb-2">Tutores Destacados</h6>
+        <div className="container-fluid px-0">
+            <h6 className="fw-bold text-center mb-3">Tutores Destacados</h6>
 
-            <div className="tutor-card-compact position-relative">
-                <div className="card shadow-sm border-0 rounded-4 overflow-hidden" style={{position: 'relative'}}>
-                    {/* Imagen del tutor que ocupa todo el ancho */}
-                    <div className="tutor-img-container">
-                        <img
-                            src={getImageUrl(tutor.foto_perfil)}
-                            className="tutor-img-compact"
-                            alt={`${tutor.nombre} ${tutor.apellido}`}
-                        />
-                        {/* Overlay con nombre directamente sobre la imagen */}
-                        <div className="nombre-overlay">
-                            <h6 className="text-white text-center mb-0">
-                                {tutor.nombre} {tutor.apellido}
-                            </h6>
+            <div className="row justify-content-center mx-0">
+                <div className="col-lg-4 col-md-5 col-sm-7 col-9 px-2">
+                    <div className="card shadow-sm border-0 rounded-4 overflow-hidden">
+                        {/* Nuevo contenedor de imagen con transición suave */}
+                        <div className="tutor-slide-container position-relative">
+                            <div className="tutor-images-wrapper">
+                                {/* Mostrar la imagen anterior durante la transición */}
+                                {isTransitioning && previousIndex !== null && (
+                                    <img
+                                        src={getImageUrl(tutores[previousIndex].foto_perfil)}
+                                        className="tutor-image tutor-image-outgoing"
+                                        alt={`${tutores[previousIndex].nombre} ${tutores[previousIndex].apellido}`}
+                                    />
+                                )}
+
+                                {/* Mostrar la imagen actual */}
+                                <img
+                                    src={getImageUrl(tutor.foto_perfil)}
+                                    className="tutor-image tutor-image-incoming"
+                                    alt={`${tutor.nombre} ${tutor.apellido}`}
+                                />
+                            </div>
+
+                            {/* Overlay con nombre */}
+                            <div className="nombre-overlay d-flex align-items-end">
+                                <h6 className="text-white text-center w-100 mb-2">
+                                    {tutor.nombre} {tutor.apellido}
+                                </h6>
+                            </div>
+
+                            {/* Botones de navegación lateral */}
+                            <button
+                                onClick={handlePrevTutor}
+                                className="carousel-control-prev"
+                                type="button"
+                                aria-label="Anterior"
+                                disabled={isTransitioning}
+                            >
+                                <span className="carousel-control-prev-icon" aria-hidden="true"></span>
+                            </button>
+                            <button
+                                onClick={handleNextTutor}
+                                className="carousel-control-next"
+                                type="button"
+                                aria-label="Siguiente"
+                                disabled={isTransitioning}
+                            >
+                                <span className="carousel-control-next-icon" aria-hidden="true"></span>
+                            </button>
+                        </div>
+
+                        {/* Información adicional bajo la imagen */}
+                        <div className="card-body p-3">
+                            <div className="mb-2">
+                                {renderStars(tutor.puntuacion_promedio)}
+                            </div>
+
+                            <div className="mb-2">
+                                <div className="d-flex align-items-center">
+                                    <small className="fw-bold me-1">Carrera:</small>
+                                    <small className="text-dark">{tutor.carreras[0]?.nombre}</small>
+                                </div>
+                            </div>
+
+                            <div className="mb-2">
+                                <div className="d-flex align-items-start flex-wrap">
+                                    <small className="fw-bold me-1">Materias:</small>
+                                    <small className="text-dark">
+                                        {tutor.materias?.slice(0, 2).join(', ')}
+                                        {tutor.materias?.length > 2 ? ` y ${tutor.materias.length - 2} más` : ''}
+                                    </small>
+                                </div>
+                            </div>
+
+                            <Link
+                                to={`/tutores/${tutor.id}`}
+                                className="btn btn-primary btn-sm w-100 rounded-3 mt-2"
+                                style={{backgroundColor: '#283048', borderColor: '#283048'}}
+                            >
+                                Ver Disponibilidad
+                            </Link>
                         </div>
                     </div>
-
-                    {/* Información adicional bajo la imagen */}
-                    <div className="card-body p-2">
-                        <div className="mb-2">
-                            {renderStars(tutor.puntuacion_promedio)}
-                        </div>
-
-                        <div className="mb-2">
-                            <div className="d-flex align-items-center">
-                                <small className="fw-bold me-1">Carrera:</small>
-                                <small className="text-dark">{tutor.carreras[0]?.nombre}</small>
-                            </div>
-                        </div>
-
-                        <div className="materias-container mb-2">
-                            <div className="d-flex align-items-center flex-wrap">
-                                <small className="fw-bold me-1">Materias:</small>
-                                <small className="text-dark">
-                                    {tutor.materias?.slice(0, 2).join(', ')}
-                                    {tutor.materias?.length > 2 ? ` y ${tutor.materias.length - 2} más` : ''}
-                                </small>
-                            </div>
-                        </div>
-
-                        <Link
-                            to={`/tutores/${tutor.id}`}
-                            className="btn btn-primary btn-sm w-100 rounded-3 mt-2"
-                            style={{backgroundColor: '#283048', borderColor: '#283048', fontSize: '0.8rem', position: 'relative', zIndex: 10}}
-                        >
-                            Ver Disponibilidad
-                        </Link>
-                    </div>
                 </div>
+            </div>
 
-                {/* Indicadores de carrusel */}
-                <div className="carousel-indicators-compact">
-                    {tutores.map((_, index) => (
-                        <button
-                            key={index}
-                            type="button"
-                            className={`carousel-indicator-dot ${index === currentIndex ? 'active' : ''}`}
-                            onClick={() => setCurrentIndex(index)}
-                            aria-label={`Tutor ${index + 1}`}
-                        ></button>
-                    ))}
-                </div>
+            {/* Indicadores de carrusel */}
+            <div className="d-flex justify-content-center mt-3">
+                {tutores.map((_, index) => (
+                    <button
+                        key={index}
+                        type="button"
+                        className={`carousel-indicator-dot ${index === currentIndex ? 'active' : ''}`}
+                        onClick={() => {
+                            if (!isTransitioning) {
+                                // Guardar el índice actual como el anterior
+                                setPreviousIndex(currentIndex);
 
-                {/* Botones de acción estilo app de citas (opcionales) */}
-                <div className="tutor-actions d-none">
-                    <button className="action-btn action-dislike">
-                        <i className="bi bi-x-lg"></i>
-                    </button>
-                    <button className="action-btn action-like">
-                        <i className="bi bi-heart-fill"></i>
-                    </button>
-                </div>
+                                // Iniciar transición
+                                setIsTransitioning(true);
+                                setCurrentIndex(index);
+                            }
+                        }}
+                        disabled={isTransitioning}
+                        aria-label={`Tutor ${index + 1}`}
+                    ></button>
+                ))}
             </div>
         </div>
     );

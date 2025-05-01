@@ -1,159 +1,93 @@
-.card-body {
-    background-color: white;
+/* Estilos para crear una transición sin cortes */
+.tutor-slide-container {
     position: relative;
-    z-index: 5;
-}/* Estilos para el carrusel de tutores (versión compacta - estilo app de citas) */
-.tutores-carrusel-compact {
-    padding: 0;
-    max-width: 95%;
-    margin: 0 auto;
+    overflow: hidden;
+    height: 220px; /* Altura fija para evitar saltos */
 }
 
-.tutor-card-compact {
-    position: relative;
-    margin: 0 auto;
-    max-width: 100%;
-}
-
-/* Contenedor de la imagen del tutor */
-.tutor-img-container {
+/* Contenedor para la imagen actual y la anterior */
+.tutor-images-wrapper {
     position: relative;
     width: 100%;
-    height: 200px;
-    overflow: hidden;
+    height: 100%;
 }
 
-.tutor-img-compact {
+/* Estilo para imagen común */
+.tutor-image {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
-    /* Modificado: Cambiar object-position para mostrar la parte superior de la imagen */
-    object-position: center;
-    display: block;
+    object-position: center 25%;
+    transition: opacity 0.8s ease-in-out;
 }
 
-/* Nuevo overlay específico para el nombre */
+/* Imagen saliente */
+.tutor-image-outgoing {
+    opacity: 0;
+    z-index: 1;
+}
+
+/* Imagen entrante */
+.tutor-image-incoming {
+    opacity: 1;
+    z-index: 2;
+}
+
+/* Animaciones suaves */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Overlay con nombre - sobre ambas imágenes */
 .nombre-overlay {
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.4) 40%, rgba(0, 0, 0, 0) 100%);
-    padding: 15px 10px 10px;
-    z-index: 20;
-}
-
-.nombre-overlay h6 {
-    color: white;
-    font-size: 1.1rem;
-    font-weight: bold;
-    text-shadow: 0px 1px 3px rgba(0,0,0,0.9),
-    0px 2px 4px rgba(0,0,0,0.6),
-    0px 0px 10px rgba(0,0,0,0.5);
-    letter-spacing: 0.3px;
-}
-
-/* Información principal del tutor */
-.tutor-main-info {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-}
-
-.tutor-main-info h6 {
-    color: white;
-    font-size: 1.1rem;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.3) 60%, rgba(0, 0, 0, 0) 100%);
+    padding-top: 30px;
+    padding-bottom: 10px;
+    z-index: 5; /* Por encima de ambas imágenes */
     text-shadow: 0 1px 2px rgba(0,0,0,0.7);
-    margin-bottom: 5px !important;
 }
 
-/* Indicadores del carrusel */
-.carousel-indicators-compact {
-    display: flex;
-    justify-content: center;
-    gap: 6px;
-    margin-top: 8px;
+/* Controles del carrusel (flechas laterales) */
+.carousel-control-prev,
+.carousel-control-next {
+    width: 10%;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    z-index: 10; /* Por encima de todo */
 }
 
+.tutor-slide-container:hover .carousel-control-prev,
+.tutor-slide-container:hover .carousel-control-next {
+    opacity: 0.5;
+}
+
+.carousel-control-prev:hover,
+.carousel-control-next:hover {
+    opacity: 0.8 !important;
+}
+
+/* Indicadores de carrusel */
 .carousel-indicator-dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
     background-color: #ced4da;
     border: none;
+    margin: 0 3px;
     padding: 0;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 .carousel-indicator-dot.active {
     background-color: #283048;
-}
-
-/* Animación suave para el cambio de tutores */
-@keyframes fadeInOut {
-    0% {
-        opacity: 0;
-        transform: translateX(5px);
-    }
-    100% {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-.tutor-card-compact .card {
-    animation: fadeInOut 0.8s ease;
-    border-radius: 12px;
-    overflow: hidden;
-}
-
-/* Botones de acción (como en apps de citas) */
-.tutor-actions {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    margin-top: 10px;
-}
-
-.action-btn {
-    width: 45px;
-    height: 45px;
-    border-radius: 50%;
-    border: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    cursor: pointer;
-    transition: transform 0.2s;
-}
-
-.action-btn:hover {
-    transform: scale(1.1);
-}
-
-.action-dislike {
-    background-color: white;
-    color: #ff4b4b;
-}
-
-.action-like {
-    background-color: #27ae60;
-    color: white;
-}
-
-/* Responsive para mobile */
-@media (max-width: 576px) {
-    .tutor-img-container {
-        height: 180px;
-    }
-
-    .tutor-main-info h6 {
-        font-size: 0.9rem;
-    }
-
-    .card-body {
-        padding: 0.5rem 0.75rem;
-    }
+    transform: scale(1.2);
 }
