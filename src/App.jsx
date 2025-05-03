@@ -12,6 +12,7 @@ import Users from "./components/Admin/Users.jsx";
 import AppLayout from './components/Layout/AppLayout.jsx';
 import FormUserByAdmin from './components/Admin/FormUserByAdmin.jsx';
 import TutorsCRUDMaterias from "./components/tutors/TutorsMaterias/TutorsCRUDMaterias.jsx";
+import TutorsCRUDDisponibilidad from "./components/tutors/TutorsDisponibility/TutorsCRUDDisponibilidad.jsx";
 
 function App() {
     return (
@@ -41,6 +42,11 @@ function App() {
                             <Route path="/clases" element={
                                 <ProtectedRoute path="/clases">
                                     <Clasess />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/disponibility" element={
+                                <ProtectedRoute path="/disponibility">
+                                    <TutorsCRUDDisponibilidad/>
                                 </ProtectedRoute>
                             } />
                             <Route path="/users" element={

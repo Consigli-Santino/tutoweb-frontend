@@ -1,5 +1,5 @@
-const API_URL = (import.meta.env.VITE_BACKEND_URL || 'http://localhost:7000').replace(/\/$/, '');
-// Removes any trailing slash from the base URL
+const API_URL = (import.meta.env.VITE_BACKEND_URL);
+
 
 class ApiService {
     static async fetchApi(endpoint, method = 'GET', body = null,) {
@@ -70,6 +70,9 @@ class ApiService {
 
     static getMateriasByCarrera(id) {
         return ApiService.fetchApi(`/materias/carrera/${id}`);
+    }
+    static getTutoresByCarreraWithMaterias(id) {
+        return ApiService.fetchApi(`/tutores/by/carrera/${id}/with-materias`);
     }
 }
 

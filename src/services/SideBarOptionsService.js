@@ -7,11 +7,12 @@ class SidebarOptionsService {
             "path": "/carriers"
         },
         {
-           "icon": "mortarboard",
-            "name": "Quiero ser Profe",
-            "roles": ["alumno", "alumno&tutor", "superAdmin"],
-            "path": "/want-to-be-teacher"
+            "icon": "house-fill",
+            "name": "Dashboard",
+            "roles": ["alumno&tutor", "superAdmin",],
+            "path": "/dashboards"
         }
+
     ]
     loadSideBarOptionsBasedOnRole(roles) {
         // Si roles es ya un array, usarlo directamente

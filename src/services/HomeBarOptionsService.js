@@ -28,7 +28,7 @@ class HomeBarOptionsService {
             "icon": "calendar",
             "name": "Horarios",
             "roles": ["alumno", "alumno&tutor", "superAdmin"],
-            "path": "/evaluations"
+            "path": "/disponibility"
         },
         {
             "icon": "coin",

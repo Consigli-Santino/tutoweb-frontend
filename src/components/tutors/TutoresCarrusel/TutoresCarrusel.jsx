@@ -6,7 +6,7 @@ import useAuth from "../../../context/AuthContext.jsx";
 
 const TutoresCarrusel = () => {
     const { user } = useAuth();
-    const { getTutoresByCarrera } = useEntidades();
+    const { getTutoresByCarreraWithMaterias  } = useEntidades();
     const [tutores, setTutores] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -31,12 +31,10 @@ const TutoresCarrusel = () => {
         setIsTransitioning(true);
         setCurrentIndex(nextIndex);
     };
-
-    // Cargar tutores al montar el componente
     useEffect(() => {
         const fetchTutores = async () => {
             try {
-                const data = await getTutoresByCarrera(user.carreras[0]?.id);
+                const data = await getTutoresByCarreraWithMaterias(user.carreras[0]?.id);
                 if (data.success) {
                     setTutores(data.data);
                 } else {
@@ -51,7 +49,7 @@ const TutoresCarrusel = () => {
         };
 
         fetchTutores();
-    }, [getTutoresByCarrera, user.carreras]);
+    }, [getTutoresByCarreraWithMaterias, user.carreras]);
 
     // Efecto para detectar el final de la transición
     useEffect(() => {
