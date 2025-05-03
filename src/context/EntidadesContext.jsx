@@ -37,15 +37,17 @@ export const EntidadesProvider = ({ children }) => {
                 ApiService.getMateriasByCarrera(user.carreras[0]?.id),
                 ApiService.getTutoresByCarrera(user.carreras[0]?.id),
             ];
-            // Solo cargar roles si el usuario no es "alumno" o "alumno&profesor"
             if (user?.roles[0] !== "alumno" && user?.roles[0] !== "alumno&profesor") {
                 requests.push(ApiService.getRoles());
             }
+            const resultados = await Promise.all(requests);
+            if (resultados[0].success) setCarreras(resultados[0].data);
+            if (resultados[1].success) setMaterias(resultados[1].data);
+            if (user?.roles[0] !== "alumno" && user?.roles[0] !== "alumno&profesor" && resultados[4]?.success) {
+                setRoles(resultados[4].data);
+            }
 
-            const [carrerasData, materiasData, rolesData] = await Promise.all(requests);
-            if (carrerasData.success) setCarreras(carrerasData.data);
-            if (materiasData.success) setMaterias(materiasData.data);
-            if (rolesData?.success) setRoles(rolesData.data);
+            console.log("Datos comunes cargados:", resultados);
         } catch (err) {
             console.error("Error cargando datos comunes:", err);
             setError("Error al cargar los datos básicos de la aplicación");

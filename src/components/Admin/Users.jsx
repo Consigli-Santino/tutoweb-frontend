@@ -10,8 +10,6 @@ const Users = () => {
     const {
         carreras,
         roles,
-        isLoading: contextLoading,
-        error: contextError,
         getUsuarios,
         deleteUsuario,
     } = useEntidades();
