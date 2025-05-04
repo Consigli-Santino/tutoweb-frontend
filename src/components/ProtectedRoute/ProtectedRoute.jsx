@@ -1,14 +1,15 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import useAuth from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
+// Improved ProtectedRoute with loading state handling
 const ProtectedRoute = ({ children, path }) => {
-    const { isAuthenticated, hasAccess, loading } = useAuth();
+    const { isAuthenticated, loading, hasAccess } = useAuth();
 
-    // Mostrar indicador de carga mientras se verifica la autenticación
+    // Show loading indicator while auth state is being determined
     if (loading) {
         return (
-            <div className="d-flex justify-content-center align-items-center min-vh-100">
+            <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
                 <div className="spinner-border text-primary" role="status">
                     <span className="visually-hidden">Cargando...</span>
                 </div>
@@ -16,18 +17,17 @@ const ProtectedRoute = ({ children, path }) => {
         );
     }
 
-    // Si no está autenticado, redirigir al login
+    // If user is not authenticated, redirect to login
     if (!isAuthenticated) {
         return <Navigate to="/login" replace />;
     }
 
-    // Si está autenticado pero no tiene acceso a la ruta, mostrar unauthorized
-    if (path && !hasAccess(path)) {
-        console.log(`Usuario no tiene acceso a la ruta: ${path}`);
+    // If user doesn't have access to this specific route, redirect to unauthorized
+    if (!hasAccess(path)) {
         return <Navigate to="/unauthorized" replace />;
     }
 
-    // Si está autenticado y tiene acceso, mostrar el componente hijo
+    // If authenticated and authorized, render the children
     return children;
 };
 

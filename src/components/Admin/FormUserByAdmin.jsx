@@ -3,10 +3,12 @@ import { useNavigate, useParams } from "react-router-dom";
 import _ from 'lodash';
 import '../Login/LoginButton.css';
 import { useEntidades } from "../../context/EntidadesContext.jsx";
+import CustomSelect from '../../components/CustomInputs/CustomSelect.jsx'; // Importamos nuestro componente personalizado
 
-const FormNewUser = () => {
+const FormUserByAdmin = () => {
     const {
-        carreras
+        carreras,
+        roles
     } = useEntidades();
     const navigate = useNavigate();
     const { id } = useParams(); // Capturar el ID de la URL si estamos en modo edición
@@ -20,7 +22,7 @@ const FormNewUser = () => {
         password: '',
         confirmPassword: '',
         foto_perfil: null,
-        es_tutor: false,
+        id_rol: '',
         carrera_id: ''
     });
 
@@ -61,15 +63,15 @@ const FormNewUser = () => {
                     password: '',
                     confirmPassword: '',
                     foto_perfil: null,
-                    es_tutor: data.data.es_tutor || false,
-                    carrera_id: data.data.carreras && data.data.carreras.length > 0
-                        ? data.data.carreras[0].id.toString()
-                        : ''
+                    carrera_id:data.data.carreras[0]?.id?.toString() || '',
+                    rol_id: data.data.rol?.id?.toString() || ''
                 });
+                if (data.data.foto_perfil) {
+                    const imageUrl = data.data.foto_perfil.startsWith('http')
+                        ? data.data.foto_perfil
+                        : `http://localhost:7000${data.data.foto_perfil}`;
 
-                // Si hay una foto de perfil, mostrar vista previa
-                if (data.data.foto_perfil && data.data.foto_perfil !== 'string') {
-                    setImagePreview(data.data.foto_perfil);
+                    setImagePreview(imageUrl);
                 }
             } else {
                 throw new Error(data.message || 'Error al obtener usuario');
@@ -129,18 +131,28 @@ const FormNewUser = () => {
 
                 // Crear FormData para enviar incluyendo la imagen
                 const formDataToSend = new FormData();
-                for (const key in formData) {
-                    // No incluir contraseña vacía en edición o confirmPassword
-                    if (key !== 'confirmPassword' &&
-                        !(key === 'password' && id && !formData.password) &&
-                        formData[key] !== null) {
-                        formDataToSend.append(key, formData[key]);
-                    }
+
+                // Añadir los campos al FormData
+                formDataToSend.append('nombre', formData.nombre);
+                formDataToSend.append('apellido', formData.apellido);
+                formDataToSend.append('email', formData.email);
+                formDataToSend.append('id_carrera', formData.carrera_id); // Cambiado a id_carrera según FormUser
+                formDataToSend.append('id_rol', formData.rol_id); // Cambiado a id_rol según FormUser
+
+                // Sólo añadir password si es nuevo usuario o si se está cambiando
+                if (!id || (id && formData.password)) {
+                    formDataToSend.append('password', formData.password);
                 }
 
+                if (formData.foto_perfil) {
+                    formDataToSend.append('profile_image', formData.foto_perfil);
+                }
+                const originalEmail = formData.email; // Esto debe ser el email original, no el nuevo
+
+                // Usar los endpoints exactamente como en FormUser
                 const url = id
-                    ? `http://localhost:7000/usuario/${id}`
-                    : 'http://localhost:7000/usuario';
+                    ? `${import.meta.env.VITE_BACKEND_URL}/usuario/${originalEmail}/form`
+                    : `${import.meta.env.VITE_BACKEND_URL}/usuario/register-user`;
 
                 const method = id ? 'PUT' : 'POST';
 
@@ -159,8 +171,8 @@ const FormNewUser = () => {
 
                 const data = await response.json();
                 if (data.success) {
-                    // Redirigir a la lista de usuarios
-                    navigate('/admin/usuarios');
+                    alert(id ? 'Usuario actualizado correctamente' : 'Usuario creado correctamente');
+                    navigate('/users');
                 } else {
                     throw new Error(data.message || `Error al ${id ? 'actualizar' : 'crear'} usuario`);
                 }
@@ -173,7 +185,6 @@ const FormNewUser = () => {
         }, 500, { leading: true, trailing: false }),
         [navigate, formData, id]
     );
-
     return (
         <div className="container-fluid px-3 py-2">
             <div className="card shadow border-0 rounded-4 overflow-hidden">
@@ -242,21 +253,17 @@ const FormNewUser = () => {
                             </div>
                             <div className="col-md-6 mb-2">
                                 <label className="form-label text-muted small mb-1">CARRERA</label>
-                                <select
-                                    className="form-select form-select-sm bg-light border-0 py-2 rounded-3"
+                                <CustomSelect
                                     name="carrera_id"
                                     value={formData.carrera_id}
                                     onChange={handleChange}
+                                    options={carreras}
+                                    placeholder="Seleccione una carrera"
                                     disabled={isLoading}
                                     required
-                                >
-                                    <option value="" disabled>Seleccione una carrera</option>
-                                    {carreras.map(carrera => (
-                                        <option key={carrera.id} value={carrera.id}>
-                                            {carrera.nombre}
-                                        </option>
-                                    ))}
-                                </select>
+                                    isSearchable={true}
+                                    variant="light"
+                                />
                             </div>
                         </div>
 
@@ -317,21 +324,18 @@ const FormNewUser = () => {
                                     />
                                 </div>
                             </div>
-                            <div className="col-md-4 mb-2 d-flex align-items-end">
-                                <div className="form-check mb-1 mt-2">
-                                    <input
-                                        type="checkbox"
-                                        className="form-check-input"
-                                        id="rolCheck"
-                                        name="es_tutor"
-                                        checked={formData.es_tutor}
-                                        onChange={handleChange}
-                                        disabled={isLoading}
-                                    />
-                                    <label className="form-check-label text-muted small" htmlFor="rolCheck">
-                                        Es tutor
-                                    </label>
-                                </div>
+                            <div className="col-md-4 mb-2">
+                                <label className="form-label text-muted small mb-1">ROL</label>
+                                <CustomSelect
+                                    name="rol_id"
+                                    value={formData.rol_id}
+                                    onChange={handleChange}
+                                    options={roles}
+                                    placeholder="Seleccione un rol"
+                                    disabled={isLoading}
+                                    isSearchable={true}
+                                    variant="light"
+                                />
                             </div>
                         </div>
 
@@ -367,4 +371,4 @@ const FormNewUser = () => {
     );
 };
 
-export default FormNewUser;
+export default FormUserByAdmin;

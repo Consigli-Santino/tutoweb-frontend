@@ -1,18 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import '../Login/LoginButton.css';
-import './Users.css';
+import '../../commonTables.css';
 import { useEntidades } from '../../context/EntidadesContext.jsx';
+import CustomSelect from '../../components/CustomInputs/CustomSelect.jsx'; // Importamos nuestro componente personalizado
 
 const Users = () => {
     const navigate = useNavigate();
-    // Usa el contexto para obtener datos y métodos compartidos
     const {
         carreras,
         roles,
-        materias,
-        isLoading: contextLoading,
-        error: contextError,
         getUsuarios,
         deleteUsuario,
     } = useEntidades();
@@ -22,7 +19,6 @@ const Users = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Estados para los filtros
     const [searchTerm, setSearchTerm] = useState('');
     const [rolFilter, setRolFilter] = useState('');
     const [carreraFilter, setCarreraFilter] = useState('');
@@ -32,7 +28,6 @@ const Users = () => {
         fetchUsuarios();
     }, []);
 
-    // Efecto para aplicar los filtros cuando cambian
     useEffect(() => {
         applyFilters();
     }, [searchTerm, rolFilter, carreraFilter, materiaFilter, usuarios]);
@@ -46,23 +41,19 @@ const Users = () => {
             if (data.success) {
                 setUsuarios(data.data);
                 setFilteredUsuarios(data.data);
-                console.log('Usuarios cargados:', data.data);
             } else {
                 throw new Error(data.message || 'Error al obtener usuarios');
             }
         } catch (err) {
-            console.error('Error fetching usuarios:', err);
             setError(err.message);
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Función para aplicar todos los filtros
     const applyFilters = () => {
         let result = [...usuarios];
 
-        // Aplicar filtro de búsqueda general
         if (searchTerm) {
             const searchTermLower = searchTerm.toLowerCase();
             result = result.filter(usuario =>
@@ -76,14 +67,12 @@ const Users = () => {
             );
         }
 
-        // Aplicar filtro por rol
         if (rolFilter) {
             result = result.filter(usuario =>
                 usuario.rol && usuario.rol.id.toString() === rolFilter
             );
         }
 
-        // Aplicar filtro por carrera
         if (carreraFilter) {
             result = result.filter(usuario =>
                     usuario.carreras && usuario.carreras.some(c =>
@@ -92,16 +81,17 @@ const Users = () => {
             );
         }
 
-        // Aplicar filtro por materia
         if (materiaFilter) {
-            // Aquí implementaríamos la lógica para filtrar por materia
-            // cuando tengamos esa relación en los datos
+            result = result.filter(usuario =>
+                    usuario.materias && usuario.materias.some(m =>
+                        m.id.toString() === materiaFilter
+                    )
+            );
         }
 
         setFilteredUsuarios(result);
     };
 
-    // Manejar cambios en los filtros
     const handleSearchChange = (e) => {
         setSearchTerm(e.target.value);
     };
@@ -111,12 +101,10 @@ const Users = () => {
     };
 
     const handleCarreraFilterChange = (e) => {
-        setCarreraFilter(e.target.value);
+        const selectedCarreraId = e.target.value;
+        setCarreraFilter(selectedCarreraId);
     };
 
-    const handleMateriaFilterChange = (e) => {
-        setMateriaFilter(e.target.value);
-    };
 
     const clearFilters = () => {
         setSearchTerm('');
@@ -135,13 +123,11 @@ const Users = () => {
             const response = await deleteUsuario(id);
 
             if (response.success) {
-                // Refrescar la lista de usuarios
                 await fetchUsuarios();
             } else {
                 throw new Error(response.message || 'Error al eliminar el usuario');
             }
         } catch (err) {
-            console.error('Error eliminando usuario:', err);
             setError(err.message);
         } finally {
             setIsLoading(false);
@@ -155,7 +141,6 @@ const Users = () => {
     const handleAdd = () => {
         navigate('/admin/usuarios/nuevo');
     };
-
 
     return (
         <div className="container-fluid px-3 py-2">
@@ -174,7 +159,6 @@ const Users = () => {
                         </div>
                     )}
 
-                    {/* Sección de filtros */}
                     <div className="filter-container mb-4 p-3 shadow-sm">
                         <div className="row g-2">
                             <div className="col-12 col-md-4 mb-2">
@@ -194,48 +178,24 @@ const Users = () => {
                             <div className="col-12 col-md-8">
                                 <div className="row g-2">
                                     <div className="col-md-4 col-6 mb-2">
-                                        <select
-                                            className="form-select form-select-sm bg-white border-0 py-2 rounded-3"
+                                        <CustomSelect
                                             value={rolFilter}
                                             onChange={handleRolFilterChange}
-                                        >
-                                            <option value="">Todos los roles</option>
-                                            {roles.map(role => (
-                                                <option key={role.id} value={role.id}>
-                                                    {role.nombre}
-                                                </option>
-                                            ))}
-                                        </select>
+                                            options={roles}
+                                            placeholder="Todos los roles"
+                                            className="bg-white border-0 py-2 rounded-3"
+                                            variant="light"
+                                        />
                                     </div>
                                     <div className="col-md-4 col-6 mb-2">
-                                        <select
-                                            className="form-select form-select-sm bg-white border-0 py-2 rounded-3"
+                                        <CustomSelect
                                             value={carreraFilter}
                                             onChange={handleCarreraFilterChange}
-
-                                        >
-                                            <option value="">Todas las carreras</option>
-                                            {carreras.map(carrera => (
-                                                <option key={carrera.id} value={carrera.id}>
-                                                    {carrera.nombre}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div className="col-md-3 col-6 mb-2">
-                                        <select
-                                            className="form-select form-select-sm bg-white border-0 py-2 rounded-3"
-                                            value={materiaFilter}
-                                            onChange={handleMateriaFilterChange}
-                                            disabled={materias.length <= 1}
-                                        >
-                                            <option value="">Todas las materias</option>
-                                            {materias.slice(1).map(materia => (
-                                                <option key={materia.id} value={materia.id}>
-                                                    {materia.nombre}
-                                                </option>
-                                            ))}
-                                        </select>
+                                            options={carreras}
+                                            placeholder="Todas las carreras"
+                                            className="bg-white border-0 py-2 rounded-3"
+                                            variant="light"
+                                        />
                                     </div>
                                     <div className="col-md-1 col-6 mb-2 d-flex align-items-center">
                                         <button
@@ -271,24 +231,24 @@ const Users = () => {
                                         <td className="border-0 py-3">{usuario.nombre}</td>
                                         <td className="border-0 py-3">{usuario.apellido}</td>
                                         <td className="border-0 py-3">
-                                            <span className="tag-email">
-                                                {usuario.email}
-                                            </span>
+                                                <span className="tag-email">
+                                                    {usuario.email}
+                                                </span>
                                         </td>
                                         <td className="border-0 py-3">
                                             {new Date(usuario.fecha_registro).toLocaleDateString()}
                                         </td>
                                         <td className="border-0 py-3">
-                                            <span className={`badge ${usuario.rol.nombre ? 'bg-success' : 'bg-secondary'}`}>
-                                                {usuario.rol ? usuario.rol.nombre : 'Sin rol'}
-                                            </span>
+                                                <span className={`badge ${usuario.rol.nombre ? 'bg-success' : 'bg-secondary'}`}>
+                                                    {usuario.rol ? usuario.rol.nombre : 'Sin rol'}
+                                                </span>
                                         </td>
                                         <td className="border-0 py-3">
                                             {usuario.carreras && usuario.carreras.length > 0
                                                 ? usuario.carreras.map((c, idx) => (
                                                     <span key={idx} className="tag-carrera">
-                                                        {c.nombre}
-                                                    </span>
+                                                            {c.nombre}
+                                                        </span>
                                                 ))
                                                 : <span className="text-muted fst-italic">Sin carrera</span>
                                             }
@@ -340,19 +300,16 @@ const Users = () => {
                         </table>
                     </div>
 
-                    {/* Mostrar contador de resultados */}
                     <div className="d-flex justify-content-between align-items-center mt-3">
                         <div className="text-muted small">
                             Mostrando {filteredUsuarios.length} de {usuarios.length} usuarios
                         </div>
                     </div>
 
-                    {/* Espacio adicional para evitar que el contenido quede detrás del HomeBar en mobile */}
                     <div className="home-bar-spacing"></div>
                 </div>
             </div>
 
-            {/* Botón flotante para agregar usuario */}
             <button
                 className="btn btn-lg rounded-circle position-fixed shadow btn-float-add"
                 onClick={handleAdd}

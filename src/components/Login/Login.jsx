@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import utnLogo from '../../assets/UTN_logo.jpg';
 import { useNavigate } from "react-router-dom";
-import _ from 'lodash';
+import { useAuth } from '../../context/AuthContext';  // Import useAuth explicitly
 import './LoginButton.css';
 import LoginService from "../../services/LoginService.js";
 
 const Login = () => {
     const navigate = useNavigate();
+    const { login, isAuthenticated, loading } = useAuth(); // Add loading state from AuthContext
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
         email: '',
@@ -14,28 +15,31 @@ const Login = () => {
     });
     const [error, setError] = useState('');
 
+    useEffect(() => {
+        if (!loading && isAuthenticated) {
+            navigate('/home');
+        }
+    }, [isAuthenticated, loading, navigate]);
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prevState => ({
             ...prevState,
             [name]: value
         }));
-        // Limpiar el error cuando el usuario comienza a escribir
-        if (error) setError('')
-        ;
+        if (error) setError('');
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        debugger
         setIsLoading(true);
         setError('');
         try {
             const result = await LoginService.login(formData.email, formData.password);
 
             if (result.success) {
-                // Login exitoso
-                localStorage.setItem('token', result.data.access_token);
+                // Login exitoso - use the login function from AuthContext
+                login(result.data.access_token);
                 navigate('/home');
             } else {
                 // Error en el login
@@ -48,6 +52,17 @@ const Login = () => {
             setIsLoading(false);
         }
     };
+
+    // Show loading state while AuthContext is initializing
+    if (loading) {
+        return (
+            <div className="container-fluid min-vh-100 d-flex align-items-center justify-content-center">
+                <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Cargando...</span>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="container-fluid min-vh-100 d-flex align-items-center justify-content-center px-3 py-4">

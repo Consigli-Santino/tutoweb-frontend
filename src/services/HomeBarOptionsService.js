@@ -3,13 +3,13 @@ class HomeBarOptionsService {
         {
             "icon": "house-fill",
             "name": "Inicio",
-            "roles": ["alumno", "alumno&profesor", "superAdmin", "guardia"],
+            "roles": ["alumno", "alumno&tutor", "superAdmin", "guardia"],
             "path": "/home"
         },
         {
             "icon": "folder",
             "name": "Materias",
-            "roles": ["alumno", "alumno&profesor"],
+            "roles": ["alumno", "alumno&tutor"],
             "path": "/subjects"
         },
         {
@@ -21,20 +21,26 @@ class HomeBarOptionsService {
         {
             "icon": "book",
             "name": "Clases",
-            "roles": ["alumno", "alumno&profesor", "superAdmin", "guardia"],
+            "roles": ["alumno", "alumno&tutor", "superAdmin", "guardia"],
             "path": "/clases"
         },
         {
             "icon": "calendar",
             "name": "Horarios",
-            "roles": ["alumno", "alumno&profesor", "superAdmin"],
-            "path": "/evaluations"
+            "roles": ["alumno", "alumno&tutor", "superAdmin"],
+            "path": "/disponibility"
         },
         {
             "icon": "coin",
             "name": "Pagos y saldos",
             "roles": ["alumno", "superAdmin"],
             "path": "/payments"
+        },
+        {
+            "icon": "diagram-3",
+            "name": "Mis servicios",
+            "roles": ["alumno&tutor"],
+            "path": "/tutor/servicios"
         }
     ]
 

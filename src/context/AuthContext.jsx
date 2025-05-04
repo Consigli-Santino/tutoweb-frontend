@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [availableRoutesSideBar, setAvailableRoutesSideBar] = useState([]);
     const [availableRoutesHomeBar, setAvailableRoutesHomeBar] = useState([]);
-    const loginUrl = import.meta.env.VITE_LOGIN_TUTOWEB;
+    const loginUrl = import.meta.env.VITE_LOGIN_URL;
 
     const loadUserFromToken = () => {
         const token = localStorage.getItem('token');
@@ -46,7 +46,6 @@ export const AuthProvider = ({ children }) => {
                 );
             }
             console.log('Roles del usuario:', roles);
-            debugger
             const sideBarOptions = SideBarOptionsService.getOptions(roles)
             const homeBarOptions = HomeBarOptionsService.getOptions(roles);
             const routesSideBar = sideBarOptions
@@ -62,6 +61,7 @@ export const AuthProvider = ({ children }) => {
                 .map(option => option.path);
 
             setUser({
+                id: decodedToken.user_data.id || '',
                 nombre: decodedToken.user_data.nombre || '',
                 apellido: decodedToken.user_data.apellido || '',
                 email: decodedToken.user_data.email || '',
@@ -93,9 +93,8 @@ export const AuthProvider = ({ children }) => {
     };
     const hasAccess = (path) => {
         if (!user) return false;
-
         // Siempre permitir acceso a /home
-        if (path === '/home') {
+        if (path === '/home' || '/tutores/:id') {
             return true;
         }
 

@@ -13,6 +13,11 @@
     transform: scale(1.1);
 }
 
+/* Estilo activo para el botón */
+.nav-icon-button.active {
+    font-weight: 500;
+}
+
 /* Icon circle effect */
 .icon-circle {
     display: flex;
@@ -29,6 +34,17 @@
 .nav-icon-button:active .icon-circle {
     background-color: rgba(255, 255, 255, 0.2);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Estilo del círculo cuando el botón está activo */
+.nav-icon-button.active .icon-circle {
+    background-color: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Para que el hover no afecte el estado activo */
+.nav-icon-button.active:hover {
+    transform: none;
 }
 
 /* Additional float button style for reference */

@@ -1,0 +1,130 @@
+/* CustomSelect.css - Estilos mejorados para eliminar el contorno blanco */
+
+/* Contenedor general - eliminamos padding y ajustamos el ancho */
+.custom-select-container {
+    width: 100%;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* Asegurarse que el contenedor del control no tenga bordes extras */
+.react-select-container {
+    border: none !important;
+    border-radius: 0.3rem !important;
+    overflow: hidden !important;
+}
+
+/* Estilos específicos para variantes */
+.react-select-container.light .react-select__control {
+    background-color: #f8f9fa !important;
+}
+
+.react-select-container.white .react-select__control {
+    background-color: #ffffff !important;
+}
+
+/* Eliminamos cualquier borde o padding adicional del control */
+.react-select__control {
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    min-height: 31px !important;
+    height: 31px !important;
+    border-radius: 0.3rem !important;
+}
+
+/* Ajustamos el padding del contenedor de valor */
+.react-select__value-container {
+    padding: 0 8px !important;
+    margin: 0 !important;
+}
+
+/* Eliminar cualquier espacio extra en el contenedor de indicadores */
+.react-select__indicators {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Estilos para el placeholder */
+.react-select__placeholder {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Estilo para el menú desplegable */
+.react-select__menu {
+    border-radius: 0.3rem !important;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    margin-top: 2px !important;
+}
+
+/* Estilo para los indicadores (flecha, X) */
+.react-select__indicator {
+    color: #6c757d !important;
+    padding: 0 8px !important;
+}
+
+.react-select__indicator:hover {
+    color: #495057 !important;
+}
+
+/* Estilos para estado disabled */
+.react-select__control--is-disabled {
+    opacity: 0.65;
+    background-color: #e9ecef !important;
+    cursor: not-allowed !important;
+}
+
+/* Estilo para el mensaje "No options" */
+.react-select__menu-notice--no-options {
+    color: #6c757d;
+    font-size: 0.875rem;
+    padding: 8px;
+    text-align: center;
+}
+
+/* Estilo para el control cuando está enfocado - quitamos bordes */
+.react-select__control--is-focused {
+    box-shadow: 0 0 0 0.25rem rgba(40, 48, 72, 0.25) !important;
+    border: none !important;
+}
+
+/* Ajuste de altura para opciones del menú */
+.react-select__option {
+    padding: 6px 12px !important;
+}
+
+/* Asegurar que el texto no se desborde */
+.react-select__single-value {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    right: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Mostrar el cursor pointer en opciones y control */
+.react-select__control:not(.react-select__control--is-disabled),
+.react-select__option:not(.react-select__option--is-disabled) {
+    cursor: pointer !important;
+}
+
+/* Eliminar cualquier padding o margen adicional en todo el componente */
+.react-select * {
+    box-sizing: border-box !important;
+}
+
+/* Ajuste específico para el input dentro del select */
+.react-select__input-container {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.react-select__input {
+    margin: 0 !important;
+}

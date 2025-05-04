@@ -1,0 +1,115 @@
+/* Estilos para crear una transición sin cortes */
+.tutor-slide-container {
+    position: relative;
+    overflow: hidden;
+    height: 220px; /* Altura fija para evitar saltos en móvil */
+}
+
+/* Contenedor para la imagen actual y la anterior */
+.tutor-images-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+/* Estilo para imagen común */
+.tutor-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center 25%;
+    transition: opacity 0.8s ease-in-out;
+}
+
+/* Imagen saliente */
+.tutor-image-outgoing {
+    opacity: 0;
+    z-index: 1;
+}
+
+/* Imagen entrante */
+.tutor-image-incoming {
+    opacity: 1;
+    z-index: 2;
+}
+
+/* Animaciones suaves */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Overlay con nombre - sobre ambas imágenes */
+.nombre-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.3) 60%, rgba(0, 0, 0, 0) 100%);
+    padding-top: 30px;
+    padding-bottom: 10px;
+    z-index: 5; /* Por encima de ambas imágenes */
+    text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+}
+
+/* Controles del carrusel (flechas laterales) */
+.carousel-control-prev,
+.carousel-control-next {
+    width: 10%;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    z-index: 10; /* Por encima de todo */
+}
+
+.tutor-slide-container:hover .carousel-control-prev,
+.tutor-slide-container:hover .carousel-control-next {
+    opacity: 0.5;
+}
+
+.carousel-control-prev:hover,
+.carousel-control-next:hover {
+    opacity: 0.8 !important;
+}
+
+/* Indicadores de carrusel */
+.carousel-indicator-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: #ced4da;
+    border: none;
+    margin: 0 3px;
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.carousel-indicator-dot.active {
+    background-color: #283048;
+    transform: scale(1.2);
+}
+
+/* Ajustes para modo tablet/desktop con layout lado a lado */
+@media (min-width: 768px) {
+    .tutor-slide-container {
+        height: 500px; /* Increase from 320px for desktop view */
+    }
+
+    .tutor-image {
+        object-position: center 15%; /* Ajuste para centrar mejor las caras en PC */
+    }
+
+    /* Ajustes para el carrusel en el layout PC */
+    .tutores-destacados-section {
+        height: 100%; /* Ocupar todo el alto disponible */
+    }
+
+    /* Estilos para cuando está en modo lado a lado */
+    .tutores-card {
+        height: 100%;
+        margin-bottom: 0;
+    }
+}

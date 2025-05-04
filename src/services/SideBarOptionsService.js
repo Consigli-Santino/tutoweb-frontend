@@ -1,23 +1,18 @@
 class SidebarOptionsService {
     sideBarOptions = [
         {
-            "icon": "person-circle",
-            "name": "Mi Perfil",
-            "roles": ["guardia","superAdmin"],
-            "path": "/form-user"
-        },
-        {
             "icon": "building-fill",
             "name": "Carreras",
             "roles": ["superAdmin"],
             "path": "/carriers"
         },
         {
-           "icon": "mortarboard",
-            "name": "Quiero ser Profe",
-            "roles": ["alumno", "alumno&profesor", "superAdmin"],
-            "path": "/want-to-be-teacher"
+            "icon": "house-fill",
+            "name": "Dashboard",
+            "roles": ["alumno&tutor", "superAdmin",],
+            "path": "/dashboards"
         }
+
     ]
     loadSideBarOptionsBasedOnRole(roles) {
         // Si roles es ya un array, usarlo directamente

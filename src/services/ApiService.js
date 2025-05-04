@@ -1,18 +1,8 @@
-// ApiService.js
-const API_URL = 'http://localhost:7000';
-//TODO : Cambiar a la URL de PARA USAR ENVS
-/**
- * Clase para centralizar las llamadas a la API
- */
+const API_URL = (import.meta.env.VITE_BACKEND_URL);
+
+
 class ApiService {
-    /**
-     * Método genérico para realizar peticiones a la API
-     * @param {string} endpoint - La ruta del endpoint
-     * @param {string} method - El método HTTP (GET, POST, PUT, DELETE)
-     * @param {Object} body - El cuerpo de la petición (opcional)
-     * @returns {Promise<any>} - La respuesta de la API
-     */
-    static async fetchApi(endpoint, method = 'GET', body = null) {
+    static async fetchApi(endpoint, method = 'GET', body = null,) {
         try {
             const token = localStorage.getItem('token');
             if (!token) {
@@ -54,6 +44,9 @@ class ApiService {
     static async getUsuarios() {
         return ApiService.fetchApi('/usuarios/all');
     }
+    static async getMateriasByTutor(usuario_id,carrera_id) {
+        return ApiService.fetchApi(`/materias-carrera-usuario/usuario/${usuario_id}/carrera/${carrera_id}`);
+    }
 
     static async getCarreras() {
         return ApiService.fetchApi('/carreras/all');
@@ -62,13 +55,58 @@ class ApiService {
     static async getRoles() {
         return ApiService.fetchApi('/roles/all');
     }
-
+    static async getProfileImage() {
+        return ApiService.fetchApi('/usuario/profile-image');
+    }
+    static getDisponibilidadesDisponibles(tutorId, fecha) {
+        return ApiService.fetchApi(`/disponibilidades/disponibles/${tutorId}/${fecha}`);
+    }
     static async getMaterias() {
         return ApiService.fetchApi('/materias/all');
     }
 
     static async deleteUsuario(id) {
         return ApiService.fetchApi(`/usuario/${id}`, 'DELETE');
+    }
+
+    static getTutoresByCarrera(id) {
+        return ApiService.fetchApi(`/tutores/by/carrera/${id}`);
+    }
+
+    static getMateriasByCarrera(id) {
+        return ApiService.fetchApi(`/materias/carrera/${id}`);
+    }
+    static getTutoresByCarreraWithMaterias(id) {
+        return ApiService.fetchApi(`/tutores/by/carrera/${id}/with-materias`);
+    }
+    static getServiciosByTutor(tutor_id) {
+        return ApiService.fetchApi(`/servicios/tutor/${tutor_id}`);
+    }
+
+    static getServiciosByMateria(materia_id) {
+        return ApiService.fetchApi(`/servicios/materia/${materia_id}`);
+    }
+
+    static getServicio(id) {
+        return ApiService.fetchApi(`/servicio/${id}`);
+    }
+
+    static createServicio(servicio) {
+        return ApiService.fetchApi('/servicio/create', 'POST', servicio);
+    }
+
+    static updateServicio(id, servicio) {
+        return ApiService.fetchApi(`/servicio/${id}`, 'PUT', servicio);
+    }
+
+    static checkReservas(tutorId, fecha) {
+        return ApiService.fetchApi(`/reservas/check?tutor_id=${tutorId}&fecha=${fecha}`);
+    }
+    static getTutorByEmail(email) {
+        return ApiService.fetchApi(`/usuario/by-email/${email}`);
+    }
+    static deleteServicio(id) {
+        return ApiService.fetchApi(`/servicio/${id}`, 'DELETE');
     }
 }
 
