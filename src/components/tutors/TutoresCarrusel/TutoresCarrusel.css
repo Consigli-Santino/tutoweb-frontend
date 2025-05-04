@@ -95,7 +95,7 @@
 /* Ajustes para modo tablet/desktop con layout lado a lado */
 @media (min-width: 768px) {
     .tutor-slide-container {
-        height: 320px; /* Altura mayor en PC para mostrar más de la imagen */
+        height: 500px; /* Increase from 320px for desktop view */
     }
 
     .tutor-image {

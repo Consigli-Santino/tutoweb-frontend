@@ -37,7 +37,7 @@ class HomeBarOptionsService {
             "path": "/payments"
         },
         {
-            "icon": "bi-briefcase",
+            "icon": "diagram-3",
             "name": "Mis servicios",
             "roles": ["alumno&tutor"],
             "path": "/tutor/servicios"
