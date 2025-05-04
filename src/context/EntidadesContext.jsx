@@ -65,6 +65,7 @@ export const EntidadesProvider = ({ children }) => {
         materias,
         isLoading,
         error,
+        getTutorByEmail: ApiService.getTutorByEmail,
         getMateriasByCarrera: ApiService.getMateriasByCarrera,
         getMateriasByTutor: ApiService.getMateriasByTutor,
         getTutoresByCarrera: ApiService.getTutoresByCarrera,

@@ -35,6 +35,12 @@ class HomeBarOptionsService {
             "name": "Pagos y saldos",
             "roles": ["alumno", "superAdmin"],
             "path": "/payments"
+        },
+        {
+            "icon": "bi-briefcase",
+            "name": "Mis servicios",
+            "roles": ["alumno&tutor"],
+            "path": "/tutor/servicios"
         }
     ]
 

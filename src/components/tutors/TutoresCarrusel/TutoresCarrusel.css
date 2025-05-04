@@ -2,7 +2,7 @@
 .tutor-slide-container {
     position: relative;
     overflow: hidden;
-    height: 220px; /* Altura fija para evitar saltos */
+    height: 220px; /* Altura fija para evitar saltos en móvil */
 }
 
 /* Contenedor para la imagen actual y la anterior */
@@ -90,4 +90,26 @@
 .carousel-indicator-dot.active {
     background-color: #283048;
     transform: scale(1.2);
+}
+
+/* Ajustes para modo tablet/desktop con layout lado a lado */
+@media (min-width: 768px) {
+    .tutor-slide-container {
+        height: 320px; /* Altura mayor en PC para mostrar más de la imagen */
+    }
+
+    .tutor-image {
+        object-position: center 15%; /* Ajuste para centrar mejor las caras en PC */
+    }
+
+    /* Ajustes para el carrusel en el layout PC */
+    .tutores-destacados-section {
+        height: 100%; /* Ocupar todo el alto disponible */
+    }
+
+    /* Estilos para cuando está en modo lado a lado */
+    .tutores-card {
+        height: 100%;
+        margin-bottom: 0;
+    }
 }

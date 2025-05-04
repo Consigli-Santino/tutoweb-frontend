@@ -13,6 +13,8 @@ import AppLayout from './components/Layout/AppLayout.jsx';
 import FormUserByAdmin from './components/Admin/FormUserByAdmin.jsx';
 import TutorsCRUDMaterias from "./components/tutors/TutorsMaterias/TutorsCRUDMaterias.jsx";
 import TutorsCRUDDisponibilidad from "./components/tutors/TutorsDisponibility/TutorsCRUDDisponibilidad.jsx";
+import TutorProfile from "./components/tutors/TutorProfile/TutorProfile.jsx";
+import TutorsCRUDServiciosTutoria from "./components/tutors/TutorsCRUDServiciosTutoria/TutorsCRUDServiciosTutoria.jsx";
 
 function App() {
     return (
@@ -52,6 +54,16 @@ function App() {
                             <Route path="/users" element={
                                 <ProtectedRoute path="/users">
                                     <Users />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/tutores/:email" element={
+                                <ProtectedRoute path="/tutores/:email">
+                                    <TutorProfile />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/tutor/servicios" element={
+                                <ProtectedRoute path="/tutor/servicios">
+                                    <TutorsCRUDServiciosTutoria/>
                                 </ProtectedRoute>
                             } />
                             <Route path="/admin/usuarios" element={

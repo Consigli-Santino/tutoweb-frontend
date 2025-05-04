@@ -3,11 +3,13 @@ import { Link } from 'react-router-dom';
 import './TutoresCarrusel.css';
 import { useEntidades } from "../../../context/EntidadesContext.jsx";
 import useAuth from "../../../context/AuthContext.jsx";
+import ApiService from '../../../services/ApiService';
 
 const TutoresCarrusel = () => {
     const { user } = useAuth();
-    const { getTutoresByCarreraWithMaterias  } = useEntidades();
+    const { getTutoresByCarreraWithMaterias, getServiciosByTutor } = useEntidades();
     const [tutores, setTutores] = useState([]);
+    const [tutoresServicios, setTutoresServicios] = useState({});
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -31,12 +33,23 @@ const TutoresCarrusel = () => {
         setIsTransitioning(true);
         setCurrentIndex(nextIndex);
     };
+
     useEffect(() => {
         const fetchTutores = async () => {
             try {
                 const data = await getTutoresByCarreraWithMaterias(user.carreras[0]?.id);
                 if (data.success) {
                     setTutores(data.data);
+
+                    // Cargar servicios para cada tutor
+                    const serviciosPorTutor = {};
+                    for (const tutor of data.data) {
+                        const serviciosResponse = await ApiService.fetchApi(`/servicios/tutor/${tutor.email}`);
+                        if (serviciosResponse.success) {
+                            serviciosPorTutor[tutor.email] = serviciosResponse.data;
+                        }
+                    }
+                    setTutoresServicios(serviciosPorTutor);
                 } else {
                     setError(data.message || 'Error al cargar los tutores');
                 }
@@ -160,94 +173,103 @@ const TutoresCarrusel = () => {
 
     // Mostrar solo el tutor actual
     const tutor = tutores[currentIndex];
+    // Obtener los servicios del tutor actual usando su email como clave
+    const servicios = tutoresServicios[tutor.email] || [];
 
     return (
-        <div className="container-fluid px-0">
+        <div className="tutores-destacados-section h-100">
             <h6 className="fw-bold text-center mb-3">Tutores Destacados</h6>
 
-            <div className="row justify-content-center mx-0">
-                <div className="col-lg-4 col-md-5 col-sm-7 col-9 px-2">
-                    <div className="card shadow-sm border-0 rounded-4 overflow-hidden">
-                        {/* Nuevo contenedor de imagen con transición suave */}
-                        <div className="tutor-slide-container position-relative">
-                            <div className="tutor-images-wrapper">
-                                {/* Mostrar la imagen anterior durante la transición */}
-                                {isTransitioning && previousIndex !== null && (
-                                    <img
-                                        src={getImageUrl(tutores[previousIndex].foto_perfil)}
-                                        className="tutor-image tutor-image-outgoing"
-                                        alt={`${tutores[previousIndex].nombre} ${tutores[previousIndex].apellido}`}
-                                    />
-                                )}
+            <div className="tutores-card card shadow-sm border-0 rounded-4 overflow-hidden">
+                {/* Contenedor de imagen con transición suave */}
+                <div className="tutor-slide-container position-relative">
+                    <div className="tutor-images-wrapper">
+                        {/* Mostrar la imagen anterior durante la transición */}
+                        {isTransitioning && previousIndex !== null && (
+                            <img
+                                src={getImageUrl(tutores[previousIndex].foto_perfil)}
+                                className="tutor-image tutor-image-outgoing"
+                                alt={`${tutores[previousIndex].nombre} ${tutores[previousIndex].apellido}`}
+                            />
+                        )}
 
-                                {/* Mostrar la imagen actual */}
-                                <img
-                                    src={getImageUrl(tutor.foto_perfil)}
-                                    className="tutor-image tutor-image-incoming"
-                                    alt={`${tutor.nombre} ${tutor.apellido}`}
-                                />
-                            </div>
+                        {/* Mostrar la imagen actual */}
+                        <img
+                            src={getImageUrl(tutor.foto_perfil)}
+                            className="tutor-image tutor-image-incoming"
+                            alt={`${tutor.nombre} ${tutor.apellido}`}
+                        />
+                    </div>
 
-                            {/* Overlay con nombre */}
-                            <div className="nombre-overlay d-flex align-items-end">
-                                <h6 className="text-white text-center w-100 mb-2">
-                                    {tutor.nombre} {tutor.apellido}
-                                </h6>
-                            </div>
+                    {/* Overlay con nombre */}
+                    <div className="nombre-overlay d-flex align-items-end">
+                        <h6 className="text-white text-center w-100 mb-2">
+                            {tutor.nombre} {tutor.apellido}
+                        </h6>
+                    </div>
 
-                            {/* Botones de navegación lateral */}
-                            <button
-                                onClick={handlePrevTutor}
-                                className="carousel-control-prev"
-                                type="button"
-                                aria-label="Anterior"
-                                disabled={isTransitioning}
-                            >
-                                <span className="carousel-control-prev-icon" aria-hidden="true"></span>
-                            </button>
-                            <button
-                                onClick={handleNextTutor}
-                                className="carousel-control-next"
-                                type="button"
-                                aria-label="Siguiente"
-                                disabled={isTransitioning}
-                            >
-                                <span className="carousel-control-next-icon" aria-hidden="true"></span>
-                            </button>
-                        </div>
+                    {/* Botones de navegación lateral */}
+                    <button
+                        onClick={handlePrevTutor}
+                        className="carousel-control-prev"
+                        type="button"
+                        aria-label="Anterior"
+                        disabled={isTransitioning}
+                    >
+                        <span className="carousel-control-prev-icon" aria-hidden="true"></span>
+                    </button>
+                    <button
+                        onClick={handleNextTutor}
+                        className="carousel-control-next"
+                        type="button"
+                        aria-label="Siguiente"
+                        disabled={isTransitioning}
+                    >
+                        <span className="carousel-control-next-icon" aria-hidden="true"></span>
+                    </button>
+                </div>
 
-                        {/* Información adicional bajo la imagen */}
-                        <div className="card-body p-3">
-                            <div className="mb-2">
-                                {renderStars(tutor.puntuacion_promedio)}
-                            </div>
+                {/* Información adicional bajo la imagen */}
+                <div className="card-body p-3">
+                    <div className="mb-2">
+                        {renderStars(tutor.puntuacion_promedio)}
+                    </div>
 
-                            <div className="mb-2">
-                                <div className="d-flex align-items-center">
-                                    <small className="fw-bold me-1">Carrera:</small>
-                                    <small className="text-dark">{tutor.carreras[0]?.nombre}</small>
-                                </div>
-                            </div>
-
-                            <div className="mb-2">
-                                <div className="d-flex align-items-start flex-wrap">
-                                    <small className="fw-bold me-1">Materias:</small>
-                                    <small className="text-dark">
-                                        {tutor.materias?.slice(0, 2).join(', ')}
-                                        {tutor.materias?.length > 2 ? ` y ${tutor.materias.length - 2} más` : ''}
-                                    </small>
-                                </div>
-                            </div>
-
-                            <Link
-                                to={`/tutores/${tutor.id}`}
-                                className="btn btn-primary btn-sm w-100 rounded-3 mt-2"
-                                style={{backgroundColor: '#283048', borderColor: '#283048'}}
-                            >
-                                Ver Disponibilidad
-                            </Link>
+                    <div className="mb-2">
+                        <div className="d-flex align-items-center">
+                            <small className="fw-bold me-1">Carrera:</small>
+                            <small className="text-dark">{tutor.carreras[0]?.nombre}</small>
                         </div>
                     </div>
+
+                    <div className="mb-2">
+                        <div className="d-flex align-items-start flex-wrap">
+                            <small className="fw-bold me-1">Servicios:</small>
+                            <small className="text-dark">
+                                {servicios.length > 0 ? (
+                                    <>
+                                        {servicios.slice(0, 2).map((servicio, index) => (
+                                            <span key={servicio.id}>
+                                                {servicio.materia?.nombre}
+                                                {index === 0 && servicios.length > 1 ? ', ' : ''}
+                                            </span>
+                                        ))}
+                                        {servicios.length > 2 ? ` y ${servicios.length - 2} más` : ''}
+                                    </>
+                                ) : (
+                                    "No hay servicios disponibles"
+                                )}
+                            </small>
+                        </div>
+                    </div>
+
+                    <Link
+                        to={`/tutores/${tutor.email}`}
+                        className="btn btn-primary btn-sm w-100 rounded-3 mt-2"
+                        style={{backgroundColor: '#283048', borderColor: '#283048'}}
+                    >
+                        Ver Disponibilidad
+                    </Link>
                 </div>
             </div>
 
@@ -260,10 +282,7 @@ const TutoresCarrusel = () => {
                         className={`carousel-indicator-dot ${index === currentIndex ? 'active' : ''}`}
                         onClick={() => {
                             if (!isTransitioning) {
-                                // Guardar el índice actual como el anterior
                                 setPreviousIndex(currentIndex);
-
-                                // Iniciar transición
                                 setIsTransitioning(true);
                                 setCurrentIndex(index);
                             }

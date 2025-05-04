@@ -55,7 +55,12 @@ class ApiService {
     static async getRoles() {
         return ApiService.fetchApi('/roles/all');
     }
-
+    static async getProfileImage() {
+        return ApiService.fetchApi('/usuario/profile-image');
+    }
+    static getDisponibilidadesDisponibles(tutorId, fecha) {
+        return ApiService.fetchApi(`/disponibilidades/disponibles/${tutorId}/${fecha}`);
+    }
     static async getMaterias() {
         return ApiService.fetchApi('/materias/all');
     }
@@ -73,6 +78,35 @@ class ApiService {
     }
     static getTutoresByCarreraWithMaterias(id) {
         return ApiService.fetchApi(`/tutores/by/carrera/${id}/with-materias`);
+    }
+    static getServiciosByTutor(tutor_id) {
+        return ApiService.fetchApi(`/servicios/tutor/${tutor_id}`);
+    }
+
+    static getServiciosByMateria(materia_id) {
+        return ApiService.fetchApi(`/servicios/materia/${materia_id}`);
+    }
+
+    static getServicio(id) {
+        return ApiService.fetchApi(`/servicio/${id}`);
+    }
+
+    static createServicio(servicio) {
+        return ApiService.fetchApi('/servicio/create', 'POST', servicio);
+    }
+
+    static updateServicio(id, servicio) {
+        return ApiService.fetchApi(`/servicio/${id}`, 'PUT', servicio);
+    }
+
+    static checkReservas(tutorId, fecha) {
+        return ApiService.fetchApi(`/reservas/check?tutor_id=${tutorId}&fecha=${fecha}`);
+    }
+    static getTutorByEmail(email) {
+        return ApiService.fetchApi(`/usuario/by-email/${email}`);
+    }
+    static deleteServicio(id) {
+        return ApiService.fetchApi(`/servicio/${id}`, 'DELETE');
     }
 }
 

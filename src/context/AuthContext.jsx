@@ -93,9 +93,8 @@ export const AuthProvider = ({ children }) => {
     };
     const hasAccess = (path) => {
         if (!user) return false;
-
         // Siempre permitir acceso a /home
-        if (path === '/home') {
+        if (path === '/home' || '/tutores/:id') {
             return true;
         }
 
