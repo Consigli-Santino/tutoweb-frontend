@@ -1,7 +1,7 @@
 class LoginService {
     async login(email, password) {
         try {
-            const url = `http://localhost:7000/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
+            const url = `${import.meta.env.VITE_BACKEND_URL}/login?email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`;
 
             const response = await fetch(url, {
                 method: 'POST',

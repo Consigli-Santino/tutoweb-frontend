@@ -9,7 +9,7 @@ class HomeBarOptionsService {
         {
             "icon": "folder",
             "name": "Materias",
-            "roles": ["alumno", "alumno&tutor"],
+            "roles": [ "alumno&tutor"],
             "path": "/subjects"
         },
         {
@@ -27,14 +27,20 @@ class HomeBarOptionsService {
         {
             "icon": "calendar",
             "name": "Horarios",
-            "roles": ["alumno", "alumno&tutor", "superAdmin"],
+            "roles": [ "alumno&tutor", "superAdmin"],
             "path": "/disponibility"
         },
         {
             "icon": "coin",
             "name": "Pagos y saldos",
-            "roles": ["alumno", "superAdmin"],
+            "roles": ["superAdmin"],
             "path": "/payments"
+        },
+        {
+            "icon": "calendar",
+            "name": "Mis Reservas",
+            "roles": ["alumno", "alumno&tutor"],
+            "path": "/reservas"
         },
         {
             "icon": "diagram-3",

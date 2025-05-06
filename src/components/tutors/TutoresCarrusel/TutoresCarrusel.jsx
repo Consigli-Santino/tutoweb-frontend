@@ -115,7 +115,7 @@ const TutoresCarrusel = () => {
 
         return fotoPath.startsWith('http')
             ? fotoPath
-            : `http://localhost:7000${fotoPath}`;
+            : `http://192.168.0.38:7000${fotoPath}`;
     };
 
     const renderStars = (puntuacion) => {
