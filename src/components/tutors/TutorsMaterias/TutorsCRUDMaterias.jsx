@@ -12,7 +12,7 @@ const TutorsCRUDMaterias = () => {
     const {
         getMateriasByTutor,
         getMateriasByCarrera,
-        refreshCommonData,        // Para forzar recarga de datos después de cambios
+        refreshCommonData,
     } = useEntidades();
 
     const carreraId = user.carreras[0]?.id; // Obtener el ID de la primera carrera del usuario
@@ -31,7 +31,7 @@ const TutorsCRUDMaterias = () => {
 
     useEffect(() => {
         fetchData();
-    }, [carreraId, ]); // Recargar cuando cambie la carrera o la lista de materias
+    }, [carreraId, ]);
 
     useEffect(() => {
         applyFilters();
@@ -44,7 +44,6 @@ const TutorsCRUDMaterias = () => {
         setError(null);
 
         try {
-            // Obtener las materias asignadas al usuario para esta carrera
             const response = await getMateriasByTutor(user.id, carreraId);
 
             if (response && response.success) {

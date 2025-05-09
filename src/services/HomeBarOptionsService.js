@@ -39,7 +39,7 @@ class HomeBarOptionsService {
         {
             "icon": "calendar",
             "name": "Mis Reservas",
-            "roles": ["alumno", "alumno&tutor"],
+            "roles": ["alumno", "alumno&tutor","superAdmin"],
             "path": "/reservas"
         },
         {

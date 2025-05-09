@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import ApiService from '../../services/ApiService';
+import JitsiMeetRoom from '../../JitsiMeetRom/JitsiMeetRoom.jsx';
 import '../../commonTables.css';
 
 const AlumnoReservas = () => {
@@ -28,6 +29,11 @@ const AlumnoReservas = () => {
     // Estados para acciones de confirmación
     const [confirmActionId, setConfirmActionId] = useState(null);
     const [actionType, setActionType] = useState(null); // 'cancel', 'confirm', 'complete'
+
+    // Estados para el modal de Jitsi Meet
+    const [showJitsiModal, setShowJitsiModal] = useState(false);
+    const [activeJitsiRoom, setActiveJitsiRoom] = useState(null);
+    const [activeReserva, setActiveReserva] = useState(null);
 
     useEffect(() => {
         fetchReservas();
@@ -134,6 +140,32 @@ const AlumnoReservas = () => {
         }
     };
 
+
+    const startVideoCall = (reserva) => {
+        if (!reserva.sala_virtual) {
+            setError("No hay sala virtual disponible para esta reserva.");
+            return;
+        }
+        let roomUrl = reserva.sala_virtual;
+        if (!roomUrl.startsWith('http')) {
+            roomUrl = `https://meet.jit.si/${roomUrl}`;
+        }
+
+        console.log("Abriendo sala virtual:", roomUrl);
+        setActiveJitsiRoom(roomUrl);
+        setActiveReserva(reserva);
+        setShowJitsiModal(true);
+    };
+
+    const closeVideoCall = () => {
+        console.log("Cerrando videollamada");
+        setShowJitsiModal(false);
+        setTimeout(() => {
+            setActiveJitsiRoom(null);
+            setActiveReserva(null);
+        }, 300);
+    };
+
     const formatDateTime = (date, time) => {
         const formattedDate = new Date(date).toLocaleDateString('es-AR', {
             day: '2-digit',
@@ -220,13 +252,75 @@ const AlumnoReservas = () => {
         return now > reservaDateTime;
     };
 
+    const canJoinVideoCall = (reserva) => {
+        // Verificar si la reserva es virtual y está confirmada
+        if (
+            reserva.estado !== 'confirmada' ||
+            !reserva.sala_virtual ||
+            !(reserva.servicio?.modalidad === 'virtual' || reserva.servicio?.modalidad === 'ambas')
+        ) {
+            return false;
+        }
+
+        // Verificar si está dentro del rango de tiempo (15 minutos antes hasta 15 minutos después)
+        /*const reservaStartTime = new Date(`${reserva.fecha}T${reserva.hora_inicio}`);
+        const reservaEndTime = new Date(`${reserva.fecha}T${reserva.hora_fin}`);
+        const bufferBefore = new Date(reservaStartTime.getTime() - 15 * 60 * 1000); // 15 min antes
+        const bufferAfter = new Date(reservaEndTime.getTime() + 15 * 60 * 1000); // 15 min después
+        const now = new Date();
+
+        return now >= bufferBefore && now <= bufferAfter;*/
+    };
+
     const handleBack = () => {
         navigate(-1);
     };
 
+    // Renderizar el modal de Jitsi Meet
+    // En AlumnoReservas.jsx
+
+// Renderizar el modal de Jitsi Meet
+    // Renderizar el modal de Jitsi Meet
+    const renderJitsiModal = () => {
+        if (!showJitsiModal || !activeJitsiRoom || !activeReserva) return null;
+
+        return (
+            <div
+                className="modal show d-block"
+                tabIndex="-1"
+                style={{ backgroundColor: 'rgba(0,0,0,0.7)', zIndex: 1050 }}
+            >
+                <div className="modal-dialog modal-lg modal-dialog-centered">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h5 className="modal-title">
+                                {activeReserva.materia?.nombre ?
+                                    `Tutoría: ${activeReserva.materia.nombre}` :
+                                    `Sala Virtual #${activeReserva.id}`}
+                            </h5>
+                            <button
+                                type="button"
+                                className="btn-close"
+                                onClick={closeVideoCall}
+                            ></button>
+                        </div>
+                        <div className="modal-body p-0" style={{ height: '500px', overflow: 'hidden' }}>
+                            <JitsiMeetRoom
+                                roomUrl={activeJitsiRoom}
+                                displayName={`${user.nombre} ${user.apellido}`}
+                                onClose={closeVideoCall}
+                            />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     return (
         <div className="container-fluid px-3 py-2">
-            <div className="card shadow card-main">
+            {/* Agrego mb-5 pb-5 para espacio en la parte inferior para que no se solape con el HomeBar */}
+            <div className="card shadow card-main mb-5 pb-5">
                 <div className="card-header bg-transparent border-0 p-3 p-md-4">
                     <div className="d-flex justify-content-between align-items-center">
                         <h1 className="fw-bold fs-4 mb-0">
@@ -474,6 +568,40 @@ const AlumnoReservas = () => {
                                                         </div>
                                                     )}
 
+                                                    {reserva.servicio &&
+                                                        (reserva.servicio.modalidad === 'virtual') &&
+                                                        reserva.estado === 'confirmada' && (
+                                                            <div className="d-flex align-items-center mb-2">
+                                                                <i className="bi bi-camera-video me-2 text-primary"></i>
+                                                                {reserva.sala_virtual ? (
+                                                                    <div className="sala-virtual-container">
+                                                                        <span>Sala Virtual: </span>
+                                                                        <div className="mt-1">
+                                                                            {/* Siempre mostrar el botón habilitado */}
+                                                                            <button
+                                                                                className="btn btn-sm btn-primary me-1"
+                                                                                onClick={() => startVideoCall(reserva)}
+                                                                            >
+                                                                                <i className="bi bi-camera-video-fill me-1"></i>
+                                                                                Iniciar Videollamada
+                                                                            </button>
+                                                                            <a
+                                                                                href={reserva.sala_virtual}
+                                                                                target="_blank"
+                                                                                rel="noopener noreferrer"
+                                                                                className="btn btn-sm btn-outline-secondary"
+                                                                                title="Abrir en nueva pestaña"
+                                                                            >
+                                                                                <i className="bi bi-box-arrow-up-right"></i>
+                                                                            </a>
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="text-muted">Sala pendiente de configuración</span>
+                                                                )}
+                                                            </div>
+                                                        )}
+
                                                     {/* Notas de la reserva */}
                                                     {reserva.notas && (
                                                         <div className="mt-2">
@@ -505,17 +633,31 @@ const AlumnoReservas = () => {
                         <div className="alert alert-info mt-4">
                             <i className="bi bi-info-circle-fill me-2"></i>
                             <strong>Información:</strong> Las reservas solo pueden cancelarse hasta 2 horas antes del horario programado.
+                            {/* Nueva nota sobre videollamadas */}
+                            <div className="mt-1">
+                                Para las tutorías virtuales, la videollamada estará disponible 15 minutos antes y después del horario reservado.
+                            </div>
                         </div>
                     ) : (
                         <div className="alert alert-info mt-4">
                             <i className="bi bi-info-circle-fill me-2"></i>
                             <strong>Información:</strong> Como tutor, puedes confirmar o cancelar las reservas pendientes. Una vez finalizada la tutoría, puedes marcarla como completada.
+                            {/* Nueva nota sobre videollamadas */}
+                            <div className="mt-1">
+                                Las salas virtuales se generan automáticamente al confirmar una tutoría con modalidad virtual.
+                            </div>
                         </div>
                     )}
 
-                    <div className="home-bar-spacing"></div>
+                    {/* Espacio adicional para evitar que el HomeBar tape contenido */}
+                    <div className="mt-5 pt-3">
+                        {/* Espacio reservado para el HomeBar */}
+                    </div>
                 </div>
             </div>
+
+            {/* Renderizar el modal de Jitsi Meet cuando sea necesario */}
+            {renderJitsiModal()}
         </div>
     );
 };
