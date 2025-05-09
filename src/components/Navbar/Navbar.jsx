@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import ApiService from '../../services/ApiService';
 import utnLogo from '../../assets/UTN_logo.jpg';
 import './Navbar.css';
 import '../HomeBar/HomeBar.css'; // Importa los estilos del HomeBar
@@ -11,6 +12,41 @@ const Navbar = ({ userOptions = [] }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const sidebarRef = useRef(null);
 
+    // Estados para notificaciones
+    const [notifications, setNotifications] = useState([]);
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
+    const notificationsRef = useRef(null);
+
+    // Cargar notificaciones al montar y cada 60 segundos
+    useEffect(() => {
+        fetchNotifications();
+
+        // Actualizar las notificaciones cada minuto
+        const interval = setInterval(() => {
+            fetchNotifications();
+        }, 60000);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    // Detectar clics fuera del menú de notificaciones
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (notificationsRef.current && !notificationsRef.current.contains(event.target) &&
+                !event.target.closest('.notification-bell-container')) {
+                setShowNotifications(false);
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [notificationsRef]);
+
+    // Detectar clics fuera del sidebar
     useEffect(() => {
         function handleClickOutside(event) {
             if (sidebarRef.current && !sidebarRef.current.contains(event.target) &&
@@ -23,6 +59,92 @@ const Navbar = ({ userOptions = [] }) => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, [sidebarRef]);
+
+    // Función para obtener notificaciones
+    const fetchNotifications = async () => {
+        if (!user) return;
+
+        try {
+            setIsLoadingNotifications(true);
+            const response = await ApiService.fetchNotificaciones();
+
+            if (response.success) {
+                setNotifications(response.data);
+                // Contar no leídas
+                setUnreadCount(response.data.filter(notif => !notif.leida).length);
+            }
+        } catch (error) {
+            console.error("Error fetching notifications:", error);
+        } finally {
+            setIsLoadingNotifications(false);
+        }
+    };
+
+    // Marcar una notificación como leída
+    const markAsRead = async (id, e) => {
+        e.stopPropagation();
+        try {
+            await ApiService.marcarNotificacionComoLeida(id);
+            // Actualizar localmente
+            setNotifications(prev =>
+                prev.map(notif =>
+                    notif.id === id ? { ...notif, leida: true } : notif
+                )
+            );
+            setUnreadCount(prev => Math.max(0, prev - 1));
+        } catch (error) {
+            console.error("Error marking notification as read:", error);
+        }
+    };
+
+    // Marcar todas como leídas
+    const markAllAsRead = async (e) => {
+        e.stopPropagation();
+        try {
+            await ApiService.marcarTodasLasNotificacionesComoLeidas();
+            // Actualizar localmente
+            setNotifications(prev =>
+                prev.map(notif => ({ ...notif, leida: true }))
+            );
+            setUnreadCount(0);
+        } catch (error) {
+            console.error("Error marking all notifications as read:", error);
+        }
+    };
+
+    // Navegar a la página correspondiente según el tipo de notificación
+    const handleNotificationClick = (notification) => {
+        // Marcar como leída primero
+        ApiService.marcarNotificacionComoLeida(notification.id);
+
+        // Navegar según el tipo de notificación
+        if (notification.tipo === 'reserva') {
+            navigate('/reservas')
+        } else if (notification.tipo === 'pago') {
+            navigate('/pagos');
+        } else {
+            // Para otros tipos, solo cerrar el menú
+            setShowNotifications(false);
+        }
+    };
+
+    // Formatear tiempo relativo
+    const formatTime = (dateString) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+
+        if (diffInMinutes < 1) return 'Ahora';
+        if (diffInMinutes < 60) return `Hace ${diffInMinutes} min`;
+
+        const diffInHours = Math.floor(diffInMinutes / 60);
+        if (diffInHours < 24) return `Hace ${diffInHours} h`;
+
+        const diffInDays = Math.floor(diffInHours / 24);
+        if (diffInDays < 7) return `Hace ${diffInDays} d`;
+
+        return date.toLocaleDateString();
+    };
 
     // Función para manejar el clic en "Mi Perfil"
     const handleMyProfileClick = () => {
@@ -48,12 +170,81 @@ const Navbar = ({ userOptions = [] }) => {
                     </button>
 
                     {/* Botón de notificaciones con animación */}
-                    <div className="ms-auto">
-                        <button className="btn btn-link text-white border-0 p-0 nav-icon-button">
-                            <div className="icon-circle">
+                    <div className="ms-auto notification-bell-container">
+                        <button
+                            className="btn btn-link text-white border-0 p-0 nav-icon-button"
+                            onClick={() => setShowNotifications(!showNotifications)}
+                        >
+                            <div className="icon-circle position-relative">
                                 <i className="bi bi-bell-fill fs-4 notification-bell"></i>
+                                {unreadCount > 0 && (
+                                    <span className="notification-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                                )}
                             </div>
                         </button>
+
+                        {/* Panel de notificaciones */}
+                        {showNotifications && (
+                            <div className="notifications-panel" ref={notificationsRef}>
+                                <div className="notifications-header">
+                                    <h6 className="mb-0">Notificaciones</h6>
+                                    {unreadCount > 0 && (
+                                        <button
+                                            className="btn btn-sm text-primary p-0 border-0"
+                                            onClick={markAllAsRead}
+                                        >
+                                            Marcar todas como leídas
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="notifications-body">
+                                    {isLoadingNotifications ? (
+                                        <div className="text-center p-3">
+                                            <div className="spinner-border spinner-border-sm text-primary" role="status">
+                                                <span className="visually-hidden">Cargando...</span>
+                                            </div>
+                                        </div>
+                                    ) : notifications.length > 0 ? (
+                                        <div className="notification-list">
+                                            {notifications.map(notification => (
+                                                <div
+                                                    key={notification.id}
+                                                    className={`notification-item ${!notification.leida ? 'unread' : ''}`}
+                                                    onClick={() => handleNotificationClick(notification)}
+                                                >
+                                                    <div className="notification-content">
+                                                        <div className="notification-title">
+                                                            {notification.titulo}
+                                                        </div>
+                                                        <div className="notification-message">
+                                                            {notification.mensaje}
+                                                        </div>
+                                                        <div className="notification-time">
+                                                            {formatTime(notification.fecha_creacion)}
+                                                        </div>
+                                                    </div>
+                                                    {!notification.leida && (
+                                                        <button
+                                                            className="btn btn-sm mark-read-btn"
+                                                            onClick={(e) => markAsRead(notification.id, e)}
+                                                            title="Marcar como leída"
+                                                        >
+                                                            <i className="bi bi-check2-all"></i>
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="empty-notifications">
+                                            <i className="bi bi-bell-slash"></i>
+                                            <p>No tienes notificaciones</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </nav>

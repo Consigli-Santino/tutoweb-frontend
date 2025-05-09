@@ -15,6 +15,7 @@ import TutorsCRUDMaterias from "./components/tutors/TutorsMaterias/TutorsCRUDMat
 import TutorsCRUDDisponibilidad from "./components/tutors/TutorsDisponibility/TutorsCRUDDisponibilidad.jsx";
 import TutorProfile from "./components/tutors/TutorProfile/TutorProfile.jsx";
 import TutorsCRUDServiciosTutoria from "./components/tutors/TutorsCRUDServiciosTutoria/TutorsCRUDServiciosTutoria.jsx";
+import AlumnoReservas from "./components/AlumnosTutores/AlumnoReservas.jsx";
 
 function App() {
     return (
@@ -39,6 +40,11 @@ function App() {
                             <Route path="/subjects" element={
                                 <ProtectedRoute path="/subjects">
                                     <TutorsCRUDMaterias/>
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/reservas" element={
+                                <ProtectedRoute path="/reservas">
+                                    <AlumnoReservas/>
                                 </ProtectedRoute>
                             } />
                             <Route path="/clases" element={
