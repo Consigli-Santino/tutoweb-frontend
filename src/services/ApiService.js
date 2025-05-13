@@ -133,6 +133,19 @@ class ApiService {
     static getReservasByEstudiante() {
         return ApiService.fetchApi('/reservas/estudiante');
     }
+    static fetchPagoByReserva(reservaId) {
+        return ApiService.fetchApi(`/pago/reserva/${reservaId}`);
+    }
+
+// Crear un pago
+    static createPago(pagoData) {
+        return ApiService.fetchApi('/pago/create', 'POST', pagoData);
+    }
+
+// Actualizar el estado de un pago
+    static updatePagoEstado(pagoId, estado) {
+        return ApiService.fetchApi(`/pago/${pagoId}/estado/${estado}`, 'PUT');
+    }
 
     static fetchReservasDetalladasByEstudiante() {
         return ApiService.fetchApi('/reservas/estudiante/detalladas');
