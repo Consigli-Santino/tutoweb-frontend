@@ -4,11 +4,12 @@ import { useAuth } from '../../context/AuthContext';
 import ApiService from '../../services/ApiService';
 import JitsiMeetRoom from '../../JitsiMeetRom/JitsiMeetRoom.jsx';
 import '../../commonTables.css';
+import { useSearchParams } from 'react-router-dom';
 
 const AlumnoReservas = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
-
+    const [searchParams] = useSearchParams();
     // Determinar si el usuario tiene rol de tutor
     const isTutor = useMemo(() => {
         return user && (user.roles.includes('tutor') || user.roles.includes('alumno&tutor'));
@@ -44,7 +45,42 @@ const AlumnoReservas = () => {
     useEffect(() => {
         fetchReservas();
     }, [activeTab]);
+    useEffect(() => {
+        // Obtener parámetros de la URL
+        const paymentStatus = searchParams.get('payment_status');
+        const reservaId = searchParams.get('reserva_id');
+        const paymentError = searchParams.get('payment_error');
 
+        if (paymentStatus) {
+            console.log(`Retorno de pago detectado: status=${paymentStatus}, reservaId=${reservaId}`);
+
+            // Mostrar mensaje según el resultado
+            if (paymentStatus === 'approved') {
+                setSuccess("¡Pago completado con éxito! La información se actualizará en unos segundos.");
+                // Actualizar los datos
+                fetchReservas();
+                if (reservaId) {
+                    fetchPagoByReserva(parseInt(reservaId));
+                }
+            }
+            else if (paymentStatus === 'pending') {
+                setSuccess("El pago está en proceso. Se te notificará cuando se confirme.");
+                fetchReservas();
+            }
+            else {
+                setError("El pago no se completó. Por favor, intenta nuevamente.");
+                fetchReservas();
+            }
+
+            // Limpiar la URL para evitar mostrar el mensaje múltiples veces
+            navigate('/reservas', { replace: true });
+        }
+
+        if (paymentError) {
+            setError("Ocurrió un error al procesar el pago. Por favor, intenta nuevamente.");
+            navigate('/reservas', { replace: true });
+        }
+    }, [searchParams, navigate]);
     const fetchReservas = async () => {
         setIsLoading(true);
         setError(null);
@@ -183,10 +219,9 @@ const AlumnoReservas = () => {
             const pagoData = {
                 reserva_id: reserva.id,
                 monto: reserva.servicio.precio,
-                metodo_pago: method // 'efectivo' o 'mercado_pago'
+                metodo_pago: method
             };
 
-            // Llamar a la API para crear el pago
             const response = await ApiService.createPago(pagoData);
 
             if (response.success) {
@@ -354,30 +389,25 @@ const AlumnoReservas = () => {
     };
 
     const canConfirmReserva = (reserva) => {
-        // Solo los tutores pueden confirmar reservas pendientes
         return activeTab === 'tutor' && reserva.estado === 'pendiente';
     };
 
     const canCompleteReserva = (reserva) => {
-        // Solo los tutores pueden marcar como completadas las reservas confirmadas
+        // Solo tutores pueden completar reservas confirmadas
         if (activeTab !== 'tutor' || reserva.estado !== 'confirmada') {
             return false;
         }
 
-        // Solo se puede marcar como completada si ya pasó la hora
-        const reservaEndTime = new Date(`${reserva.fecha}T${reserva.hora_fin}`);
-        const now = new Date();
-
-        return now > reservaEndTime;
+        // Verificamos que la reserva esté en estado confirmada
+        // Ya no verificamos si la hora de fin ha pasado - permitimos completar en cualquier momento
+        // después de que la reserva esté confirmada
+        return true;  // Si es tutor y la reserva está confirmada, puede completarla
     };
 
     const canPayReserva = (reserva) => {
-        // Solo estudiantes pueden pagar reservas completadas que no estén pagadas
         if (activeTab !== 'estudiante' || reserva.estado !== 'completada') {
             return false;
         }
-
-        // Verificar si ya está pagada
         const pago = reservaPagos[reserva.id];
         if (pago && pago.estado === 'completado') {
             return false;
@@ -693,8 +723,8 @@ const AlumnoReservas = () => {
                                                                         }}
                                                                         title="Confirmar reserva"
                                                                     >
-                                                                        <i className="bi bi-check-square me-1"></i>
-                                                                        Completada
+                                                                        <i className="bi bi-check-circle me-1"></i>
+                                                                        Confirmar
                                                                     </button>
                                                                 )}
                                                             </div>
@@ -716,14 +746,39 @@ const AlumnoReservas = () => {
                                                         {/* Botón de pago (solo estudiante) */}
                                                         {canCompleteReserva(reserva) && (
                                                             <div className="mt-2">
-                                                                <button
-                                                                    className="btn btn-sm btn-primary"
-                                                                    onClick={() => handleCompleteReserva(reserva.id)}
-                                                                    title="Marcar como completada"
-                                                                >
-                                                                    <i className="bi bi-check-circle me-1"></i>
-                                                                    Completar
-                                                                </button>
+                                                                {(confirmActionId === reserva.id && actionType === 'complete') ? (
+                                                                    <div className="d-flex gap-1">
+                                                                        <button
+                                                                            className="btn btn-sm btn-success"
+                                                                            onClick={() => handleCompleteReserva(reserva.id)}
+                                                                            title="Marcar como completada"
+                                                                        >
+                                                                            <i className="bi bi-check"></i>
+                                                                        </button>
+                                                                        <button
+                                                                            className="btn btn-sm btn-outline-secondary"
+                                                                            onClick={() => {
+                                                                                setConfirmActionId(null);
+                                                                                setActionType(null);
+                                                                            }}
+                                                                            title="Cancelar"
+                                                                        >
+                                                                            <i className="bi bi-x"></i>
+                                                                        </button>
+                                                                    </div>
+                                                                ) : (
+                                                                    <button
+                                                                        className="btn btn-sm btn-primary"
+                                                                        onClick={() => {
+                                                                            setConfirmActionId(reserva.id);
+                                                                            setActionType('complete');
+                                                                        }}
+                                                                        title="Marcar como completada"
+                                                                    >
+                                                                        <i className="bi bi-check-circle me-1"></i>
+                                                                        Completar
+                                                                    </button>
+                                                                )}
                                                             </div>
                                                         )}
 
