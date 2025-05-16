@@ -11,14 +11,19 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "autoprefixer": "^10.4.21",
+    "date-fns": "^4.1.0",
     "jwt-decode": "^4.0.0",
     "lodash": "^4.17.21",
+    "postcss": "^8.5.3",
     "prop-types": "^15.8.1",
     "react": "^19.0.0",
     "react-datepicker": "^8.3.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.4.0",
-    "react-select": "^5.10.1"
+    "react-select": "^5.10.1",
+    "recharts": "^2.15.3",
+    "tailwindcss": "^4.1.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",

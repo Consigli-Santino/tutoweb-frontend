@@ -369,8 +369,23 @@ const ReservaCard = ({
                             <i className="bi bi-credit-card me-2 text-primary"></i>
                             <span>
                                 Pago: {reservaPagos[reserva.id].metodo_pago === 'efectivo' ? 'Efectivo' : 'Mercado Pago'} -
-                                {reservaPagos[reserva.id].estado === 'completado' ? ' Pagado' :
-                                    reservaPagos[reserva.id].estado === 'pendiente' ? ' Pendiente' : ' Cancelado'}
+                                {reservaPagos[reserva.id].estado === 'completado' ? (
+                                    <span className="text-success fw-bold"> Pagado</span>
+                                ) : reservaPagos[reserva.id].estado === 'pendiente' ? (
+                                    <span className="text-warning fw-bold"> Pendiente</span>
+                                ) : (
+                                    <span className="text-danger fw-bold"> Cancelado</span>
+                                )}
+                            </span>
+                        </div>
+                    )}
+
+                    {/* Show message when no payment exists */}
+                    {reserva.estado === 'completada' && !reservaPagos[reserva.id] && activeTab === 'tutor' && (
+                        <div className="d-flex align-items-center mb-2">
+                            <i className="bi bi-credit-card me-2 text-danger"></i>
+                            <span className="text-danger">
+                                El estudiante aún no ha iniciado el proceso de pago
                             </span>
                         </div>
                     )}

@@ -53,6 +53,21 @@ class ApiService {
     static async getCarreras() {
         return ApiService.fetchApi('/carreras/all');
     }
+    static getAllUsuarios() {
+        return ApiService.fetchApi('/usuarios/all');
+    }
+    static getTutores() {
+        return ApiService.fetchApi('/usuarios/tutores');
+    }
+    static getAllMaterias() {
+        return ApiService.fetchApi('/materias/all');
+    }
+    static getAllReservas() {
+        return ApiService.fetchApi('/reservas/admin/all');
+    }
+    static getCalificacionesByEstudiante() {
+        return ApiService.fetchApi('/calificaciones/estudiante');
+    }
 
     static async getRoles() {
         return ApiService.fetchApi('/roles/all');
@@ -213,9 +228,10 @@ class ApiService {
         return ApiService.fetchApi(`/calificaciones/tutor/${tutorId}`);
     }
 
-    static getCalificacionesByEstudiante(estudianteId) {
-        return ApiService.fetchApi(`/calificaciones/estudiante/${estudianteId}`);
+    static fetchPagosByTutor() {
+        return ApiService.fetchApi('/pagos/tutor');
     }
+
     static fetchPagosByEstudiante() {
         return ApiService.fetchApi('/pagos/estudiante');
     }

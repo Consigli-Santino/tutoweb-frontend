@@ -130,6 +130,9 @@ const ReservasContainer = () => {
                     });
 
                     setReservas(sortedReservas);
+
+                    // También cargamos los pagos para el tutor
+                    await fetchPagosByTutor();
                 } else {
                     throw new Error(response.message || 'Error al obtener reservas');
                 }
@@ -139,6 +142,19 @@ const ReservasContainer = () => {
             console.error("Error fetching reservas:", err);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    // Nuevo método para obtener los pagos cuando estamos en rol de tutor
+    const fetchPagosByTutor = async () => {
+        try {
+            const pagosResponse = await ApiService.fetchPagosByTutor();
+            if (pagosResponse.success) {
+                console.log("Pagos del tutor:", pagosResponse.data);
+                setReservaPagos(pagosResponse.data);
+            }
+        } catch (err) {
+            console.error("Error fetching pagos for tutor:", err);
         }
     };
 

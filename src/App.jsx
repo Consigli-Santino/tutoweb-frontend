@@ -20,6 +20,7 @@ import PaymentPending from "./components/Payments/PaymentPending.jsx";
 import PaymentFailure from "./components/Payments/PaymentFailure.jsx";
 import PaymentSuccess from "./components/Payments/PaymentSucces.jsx";
 import ReservasContainer from "./components/AlumnosTutores/ReservasContainer.jsx";
+import Dashboard from "./components/Dashboard/Dashboard.jsx";
 
 function App() {
     return (
@@ -52,6 +53,11 @@ function App() {
                             <Route path="/reservas" element={
                                 <ProtectedRoute path="/reservas">
                                     <ReservasContainer/>
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/dashboard" element={
+                                <ProtectedRoute path="/dashboard">
+                                    <Dashboard/>
                                 </ProtectedRoute>
                             } />
                             <Route path="/clases" element={

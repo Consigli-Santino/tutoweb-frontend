@@ -25,6 +25,12 @@ class HomeBarOptionsService {
             "path": "/disponibility"
         },
         {
+            "icon": "grid",
+            "name": "Estadisticas",
+            "roles": [ "alumno&tutor", "superAdmin","alumno"],
+            "path": "/dashboard"
+        },
+        {
             "icon": "coin",
             "name": "Pagos y saldos",
             "roles": ["superAdmin"],
