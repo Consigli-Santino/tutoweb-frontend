@@ -10,7 +10,8 @@ class ApiService {
 
             const headers = {
                 'accept': 'application/json',
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${token}`,
+                'ngrok-skip-browser-warning': 'true'
             };
 
             if (body && method !== 'GET') {
