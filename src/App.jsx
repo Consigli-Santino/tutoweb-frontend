@@ -16,6 +16,11 @@ import TutorsCRUDDisponibilidad from "./components/tutors/TutorsDisponibility/Tu
 import TutorProfile from "./components/tutors/TutorProfile/TutorProfile.jsx";
 import TutorsCRUDServiciosTutoria from "./components/tutors/TutorsCRUDServiciosTutoria/TutorsCRUDServiciosTutoria.jsx";
 import AlumnoReservas from "./components/AlumnosTutores/AlumnoReservas.jsx";
+import PaymentPending from "./components/Payments/PaymentPending.jsx";
+import PaymentFailure from "./components/Payments/PaymentFailure.jsx";
+import PaymentSuccess from "./components/Payments/PaymentSucces.jsx";
+import ReservasContainer from "./components/AlumnosTutores/ReservasContainer.jsx";
+import Dashboard from "./components/Dashboard/Dashboard.jsx";
 
 function App() {
     return (
@@ -29,6 +34,9 @@ function App() {
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<FormUser />} />
                         <Route path="/unauthorized" element={<Unauthorized />} />
+                        <Route path="/payment-success" element={<PaymentSuccess />} />
+                        <Route path="/payment-failure" element={<PaymentFailure />} />
+                        <Route path="/payment-pending" element={<PaymentPending />} />
 
                         {/* Rutas protegidas con Layout (con navbar/homebar) */}
                         <Route element={<AppLayout />}>
@@ -44,7 +52,12 @@ function App() {
                             } />
                             <Route path="/reservas" element={
                                 <ProtectedRoute path="/reservas">
-                                    <AlumnoReservas/>
+                                    <ReservasContainer/>
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/dashboard" element={
+                                <ProtectedRoute path="/dashboard">
+                                    <Dashboard/>
                                 </ProtectedRoute>
                             } />
                             <Route path="/clases" element={

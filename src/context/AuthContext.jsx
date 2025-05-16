@@ -39,7 +39,7 @@ export const AuthProvider = ({ children }) => {
             }
             let roles = [];
             if (typeof decodedToken.user_rol === 'string') {
-                roles = [decodedToken.user_rol]; // Si es string, convertirlo a array
+                roles = [decodedToken.user_rol];
             } else if (Array.isArray(decodedToken.user_rol)) {
                 roles = decodedToken.user_rol.map(role =>
                     typeof role === 'object' && role.rol ? role.rol : role
@@ -93,12 +93,10 @@ export const AuthProvider = ({ children }) => {
     };
     const hasAccess = (path) => {
         if (!user) return false;
-        // Siempre permitir acceso a /home
         if (path === '/home' || '/tutores/:id') {
             return true;
         }
 
-        // Verificar acceso directo
         if (availableRoutesSideBar.includes(path) || availableRoutesHomeBar.includes(path)) {
             return true;
         }

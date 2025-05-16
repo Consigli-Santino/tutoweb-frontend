@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import utnLogo from '../../assets/UTN_logo.jpg';
 import { useNavigate } from "react-router-dom";
-import { useAuth } from '../../context/AuthContext';  // Import useAuth explicitly
+import { useAuth } from '../../context/AuthContext';
 import './LoginButton.css';
 import LoginService from "../../services/LoginService.js";
 
 const Login = () => {
     const navigate = useNavigate();
-    const { login, isAuthenticated, loading } = useAuth(); // Add loading state from AuthContext
+    const { login, isAuthenticated, loading } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
         email: '',
@@ -38,11 +38,9 @@ const Login = () => {
             const result = await LoginService.login(formData.email, formData.password);
 
             if (result.success) {
-                // Login exitoso - use the login function from AuthContext
                 login(result.data.access_token);
                 navigate('/home');
             } else {
-                // Error en el login
                 setError(result.error);
             }
         } catch (error) {

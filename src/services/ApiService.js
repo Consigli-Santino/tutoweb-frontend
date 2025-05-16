@@ -10,7 +10,8 @@ class ApiService {
 
             const headers = {
                 'accept': 'application/json',
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${token}`,
+                'ngrok-skip-browser-warning': 'true'
             };
 
             if (body && method !== 'GET') {
@@ -51,6 +52,21 @@ class ApiService {
 
     static async getCarreras() {
         return ApiService.fetchApi('/carreras/all');
+    }
+    static getAllUsuarios() {
+        return ApiService.fetchApi('/usuarios/all');
+    }
+    static getTutores() {
+        return ApiService.fetchApi('/usuarios/tutores');
+    }
+    static getAllMaterias() {
+        return ApiService.fetchApi('/materias/all');
+    }
+    static getAllReservas() {
+        return ApiService.fetchApi('/reservas/admin/all');
+    }
+    static getCalificacionesByEstudiante() {
+        return ApiService.fetchApi('/calificaciones/estudiante');
     }
 
     static async getRoles() {
@@ -133,6 +149,19 @@ class ApiService {
     static getReservasByEstudiante() {
         return ApiService.fetchApi('/reservas/estudiante');
     }
+    static fetchPagoByReserva(reservaId) {
+        return ApiService.fetchApi(`/pago/reserva/${reservaId}`);
+    }
+
+// Crear un pago
+    static createPago(pagoData) {
+        return ApiService.fetchApi('/pago/create', 'POST', pagoData);
+    }
+
+// Actualizar el estado de un pago
+    static updatePagoEstado(pagoId, estado) {
+        return ApiService.fetchApi(`/pago/${pagoId}/estado/${estado}`, 'PUT');
+    }
 
     static fetchReservasDetalladasByEstudiante() {
         return ApiService.fetchApi('/reservas/estudiante/detalladas');
@@ -186,6 +215,29 @@ class ApiService {
 
     static eliminarDisponibilidad(id) {
         return ApiService.fetchApi(`/disponibilidad/${id}`, 'DELETE');
+    }
+    static getCalificacionByReserva(reservaId) {
+        return ApiService.fetchApi(`/calificacion/reserva/${reservaId}`);
+    }
+
+    static createCalificacion(calificacionData) {
+        return ApiService.fetchApi('/calificacion/create', 'POST', calificacionData);
+    }
+
+    static getCalificacionesByTutor(tutorId) {
+        return ApiService.fetchApi(`/calificaciones/tutor/${tutorId}`);
+    }
+
+    static fetchPagosByTutor() {
+        return ApiService.fetchApi('/pagos/tutor');
+    }
+
+    static fetchPagosByEstudiante() {
+        return ApiService.fetchApi('/pagos/estudiante');
+    }
+
+    static getCalificacionesForEstudianteReservas() {
+        return ApiService.fetchApi('/calificaciones/estudiante/reservas');
     }
 }
 

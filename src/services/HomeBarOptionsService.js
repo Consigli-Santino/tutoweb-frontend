@@ -19,16 +19,16 @@ class HomeBarOptionsService {
             "path": "/users"
         },
         {
-            "icon": "book",
-            "name": "Clases",
-            "roles": ["alumno", "alumno&tutor", "superAdmin", "guardia"],
-            "path": "/clases"
-        },
-        {
             "icon": "calendar",
             "name": "Horarios",
             "roles": [ "alumno&tutor", "superAdmin"],
             "path": "/disponibility"
+        },
+        {
+            "icon": "grid",
+            "name": "Estadisticas",
+            "roles": [ "alumno&tutor", "superAdmin","alumno"],
+            "path": "/dashboard"
         },
         {
             "icon": "coin",
@@ -37,7 +37,7 @@ class HomeBarOptionsService {
             "path": "/payments"
         },
         {
-            "icon": "calendar",
+            "icon": "bookmark",
             "name": "Mis Reservas",
             "roles": ["alumno", "alumno&tutor","superAdmin"],
             "path": "/reservas"
