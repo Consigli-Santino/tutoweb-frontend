@@ -201,6 +201,28 @@ class ApiService {
     static eliminarDisponibilidad(id) {
         return ApiService.fetchApi(`/disponibilidad/${id}`, 'DELETE');
     }
+    static getCalificacionByReserva(reservaId) {
+        return ApiService.fetchApi(`/calificacion/reserva/${reservaId}`);
+    }
+
+    static createCalificacion(calificacionData) {
+        return ApiService.fetchApi('/calificacion/create', 'POST', calificacionData);
+    }
+
+    static getCalificacionesByTutor(tutorId) {
+        return ApiService.fetchApi(`/calificaciones/tutor/${tutorId}`);
+    }
+
+    static getCalificacionesByEstudiante(estudianteId) {
+        return ApiService.fetchApi(`/calificaciones/estudiante/${estudianteId}`);
+    }
+    static fetchPagosByEstudiante() {
+        return ApiService.fetchApi('/pagos/estudiante');
+    }
+
+    static getCalificacionesForEstudianteReservas() {
+        return ApiService.fetchApi('/calificaciones/estudiante/reservas');
+    }
 }
 
 export default ApiService;

@@ -19,6 +19,7 @@ import AlumnoReservas from "./components/AlumnosTutores/AlumnoReservas.jsx";
 import PaymentPending from "./components/Payments/PaymentPending.jsx";
 import PaymentFailure from "./components/Payments/PaymentFailure.jsx";
 import PaymentSuccess from "./components/Payments/PaymentSucces.jsx";
+import ReservasContainer from "./components/AlumnosTutores/ReservasContainer.jsx";
 
 function App() {
     return (
@@ -50,7 +51,7 @@ function App() {
                             } />
                             <Route path="/reservas" element={
                                 <ProtectedRoute path="/reservas">
-                                    <AlumnoReservas/>
+                                    <ReservasContainer/>
                                 </ProtectedRoute>
                             } />
                             <Route path="/clases" element={
