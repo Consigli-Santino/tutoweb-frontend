@@ -239,6 +239,10 @@ class ApiService {
     static getCalificacionesForEstudianteReservas() {
         return ApiService.fetchApi('/calificaciones/estudiante/reservas');
     }
+
+    static async fetchPagosByReservas(idsReservas) {
+        return ApiService.fetchApi('/pagos/reservas', 'POST', { reserva_ids: idsReservas });
+    }
 }
 
 export default ApiService;

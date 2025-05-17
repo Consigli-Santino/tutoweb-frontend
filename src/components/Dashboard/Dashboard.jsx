@@ -52,58 +52,48 @@ const Dashboard = () => {
         setIsLoading(true);
         setError(null);
 
-        try {
-            if (activeTab === 'estudiante') {
-                // Obtener reservas como estudiante
-                const reservasResponse = await ApiService.fetchReservasDetalladasByEstudiante();
-                if (reservasResponse.success) {
-                    setReservas(reservasResponse.data);
+        try {if (activeTab === 'estudiante') {
+            // Fetch detailed reservations for the student
+            const reservasResponse = await ApiService.fetchReservasDetalladasByEstudiante();
+            if (reservasResponse.success) {
+                setReservas(reservasResponse.data);
 
-                    // Obtener pagos del estudiante
-                    const pagosObj = {};
-                    for (const reserva of reservasResponse.data) {
-                        if (reserva.estado === 'completada') {
-                            try {
-                                const pagoResponse = await ApiService.fetchPagoByReserva(reserva.id);
-                                if (pagoResponse.success) {
-                                    pagosObj[reserva.id] = pagoResponse.data;
-                                }
-                            } catch (err) {
-                                console.error(`Error fetching pago for reserva ${reserva.id}:`, err);
-                            }
-                        }
-                    }
-                    setPagos(pagosObj);
+                // Extract reservation IDs
+                const idsReservas = reservasResponse.data.map(reserva => reserva.id);
 
-                    // Obtener calificaciones dadas
-                    const calificacionesResponse = await ApiService.getCalificacionesByEstudiante();
-                    if (calificacionesResponse.success) {
-                        setCalificaciones(calificacionesResponse.data);
-                    }
+                // Fetch payments for the reservations
+                const pagosObj = {};
+                const response = await ApiService.fetchPagosByReservas(idsReservas);
+                if (response.success) {
+                    Object.entries(response.data).forEach(([reservaId, pagos]) => {
+                        pagosObj[reservaId] = pagos;
+                    });
                 }
-            } else if (activeTab === 'tutor') {
+                setPagos(pagosObj);
+
+                // Fetch student ratings
+                const calificacionesResponse = await ApiService.getCalificacionesByEstudiante();
+                if (calificacionesResponse.success) {
+                    setCalificaciones(calificacionesResponse.data);
+                }
+            }
+        }
+            else if (activeTab === 'tutor') {
                 // Obtener reservas como tutor
                 const reservasTutorResponse = await ApiService.fetchReservasDetalladasByTutor();
                 if (reservasTutorResponse.success) {
                     setReservas(reservasTutorResponse.data);
+                    const idsReservas = reservasTutorResponse.data.map(reserva => reserva.id);
 
-                    // Obtener pagos del tutor
                     const pagosObj = {};
-                    for (const reserva of reservasTutorResponse.data) {
-                        if (reserva.estado === 'completada') {
-                            try {
-                                const pagoResponse = await ApiService.fetchPagoByReserva(reserva.id);
-                                if (pagoResponse.success) {
-                                    pagosObj[reserva.id] = pagoResponse.data;
-                                }
-                            } catch (err) {
-                                console.error(`Error fetching pago for reserva ${reserva.id}:`, err);
-                            }
-                        }
+                    const response = await ApiService.fetchPagosByReservas(idsReservas);
+                    if (response.success) {
+                        Object.entries(response.data).forEach(([reservaId, pagos]) => {
+                            pagosObj[reservaId] = pagos;
+                        });
                     }
                     setPagos(pagosObj);
 
-                    // Obtener calificaciones recibidas
                     const calificacionesResponse = await ApiService.getCalificacionesByTutor(user.id);
                     if (calificacionesResponse.success) {
                         setCalificaciones(calificacionesResponse.data);
@@ -163,13 +153,21 @@ const Dashboard = () => {
         }));
     };
 
-
+    const getHistorialPagos = () => {
+        const pagosList = Object.values(pagos).flat();
+        const pagosPorEstado = _.countBy(pagosList, 'estado');
+        return Object.keys(pagosPorEstado).map(estado => ({
+            name: estado.charAt(0).toUpperCase() + estado.slice(1),
+            value: pagosPorEstado[estado]
+        }));
+    };
 
     const getIngresosPorPeriodo = () => {
-        // Filtrar pagos completados
-        const pagosList = Object.values(pagos).filter(pago => pago.estado === 'completado');
-
-        // Agrupar por mes
+        console.log("Pagos:", pagos);
+        const pagosList = Object.values(pagos)
+            .flat()
+            .filter(pago => pago.estado === 'completado');
+        console.log("Pagos filtrados:", pagosList);
         const ingresosPorMes = {};
         pagosList.forEach(pago => {
             const fecha = new Date(pago.fecha_pago);
@@ -178,7 +176,6 @@ const Dashboard = () => {
             ingresosPorMes[mesKey] = (ingresosPorMes[mesKey] || 0) + pago.monto;
         });
 
-        // Convertir a formato para gráficos
         return Object.keys(ingresosPorMes).map(mes => {
             const [year, month] = mes.split('-');
             return {
@@ -362,8 +359,9 @@ const Dashboard = () => {
                                         <div className="d-flex justify-content-between align-items-center">
                                             <h2 className="fs-1 fw-bold text-success mb-0">
                                                 ${Object.values(pagos)
-                                                .filter(p => p.estado === 'completado')
-                                                .reduce((sum, p) => sum + p.monto, 0)}
+                                                .flat()
+                                                .filter(pago => pago.estado === 'completado')
+                                                .reduce((sum, pago) => sum + pago.monto, 0)}
                                             </h2>
                                             <div className="bg-success p-3 rounded-circle text-white">
                                                 <i className="bi bi-cash fs-4"></i>
@@ -573,21 +571,17 @@ const Dashboard = () => {
                                                 <ResponsiveContainer width="100%" height="100%">
                                                     <PieChart>
                                                         <Pie
-                                                            data={[
-                                                                { name: 'Completados', value: Object.values(pagos).filter(p => p.estado === 'completado').length },
-                                                                { name: 'Pendientes', value: Object.values(pagos).filter(p => p.estado === 'pendiente').length },
-                                                                { name: 'Cancelados', value: Object.values(pagos).filter(p => p.estado === 'cancelado').length }
-                                                            ]}
+                                                            data={getHistorialPagos()}
                                                             cx="50%"
                                                             cy="50%"
                                                             outerRadius={100}
                                                             fill="#8884d8"
                                                             dataKey="value"
-                                                            label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                                                         >
-                                                            <Cell fill="#00C49F" />
-                                                            <Cell fill="#FFBB28" />
-                                                            <Cell fill="#FF8042" />
+                                                            <Cell fill="#00C49F" /> {/* Completados */}
+                                                            <Cell fill="#FFBB28" /> {/* Pendientes */}
+                                                            <Cell fill="#FF8042" /> {/* Cancelados */}
                                                         </Pie>
                                                         <Tooltip formatter={(value) => [`${value} pagos`, 'Cantidad']} />
                                                         <Legend />
@@ -779,14 +773,18 @@ const Dashboard = () => {
                                                                 </span>
                             </td>
                             <td>
-                                {pagos[reserva.id] ? (
-                                    <span className={`badge ${
-                                        pagos[reserva.id].estado === 'completado' ? 'bg-success' :
-                                            pagos[reserva.id].estado === 'pendiente' ? 'bg-warning text-dark' :
-                                                'bg-danger'
-                                    }`}>
-                                                                        {pagos[reserva.id].estado}
-                                                                    </span>
+                                {pagos[reserva.id] && pagos[reserva.id].length > 0 ? (
+                                    pagos[reserva.id].some(pago => pago.estado === 'completado') ? (
+                                        <span className="badge bg-success">completado</span>
+                                    ) : (
+                                        pagos[reserva.id].map((pago, index) => (
+                                            <span key={index} className={`badge ${
+                                                pago.estado === 'pendiente' ? 'bg-warning text-dark' : 'bg-danger'
+                                            } me-1`}>
+                    {pago.estado}
+                </span>
+                                        ))
+                                    )
                                 ) : (
                                     <span className="badge bg-secondary">Sin pago</span>
                                 )}
