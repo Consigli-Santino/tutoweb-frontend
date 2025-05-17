@@ -163,16 +163,27 @@ class ApiService {
         return ApiService.fetchApi(`/pago/${pagoId}/estado/${estado}`, 'PUT');
     }
 
-    static fetchReservasDetalladasByEstudiante() {
-        return ApiService.fetchApi('/reservas/estudiante/detalladas');
-    }
+    static fetchReservasDetalladasByEstudiante(fechaDesde = null, fechaHasta = null) {
+        let endpoint = '/reservas/estudiante/detalladas';
 
+        // Agregar parámetros de fecha si están presentes
+        if (fechaDesde && fechaHasta) {
+            endpoint += `?fecha_desde=${fechaDesde}&fecha_hasta=${fechaHasta}`;
+        }
+
+        return ApiService.fetchApi(endpoint);
+    }
     static getReservasByTutor() {
         return ApiService.fetchApi('/reservas/tutor');
     }
 
-    static fetchReservasDetalladasByTutor() {
-        return ApiService.fetchApi('/reservas/tutor/detalladas');
+    static fetchReservasDetalladasByTutor(fechaDesde = null, fechaHasta = null) {
+        let endpoint = '/reservas/tutor/detalladas';
+        if (fechaDesde && fechaHasta) {
+            endpoint += `?fecha_desde=${fechaDesde}&fecha_hasta=${fechaHasta}`;
+        }
+
+        return ApiService.fetchApi(endpoint);
     }
 
     static updateReserva(id, data) {
