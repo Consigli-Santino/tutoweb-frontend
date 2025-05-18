@@ -99,14 +99,12 @@ const ListadoReservas = () => {
         }
     }, [activeTab, fechaDesde, fechaHasta]);
 
-    // Cargar datos cuando cambie la pestaña activa o el rango de fechas
     useEffect(() => {
         if (activeTab) {
             fetchReservasData();
         }
     }, [activeTab, fetchReservasData]);
 
-    // Aplicar filtros a las reservas
     useEffect(() => {
         let result = [...reservas];
         if (searchTerm) {

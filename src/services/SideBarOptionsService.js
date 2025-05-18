@@ -15,7 +15,7 @@ class SidebarOptionsService {
         {
             "icon": "table",
             "name": "Listado Reservas",
-            "roles": ["alumno&tutor", "superAdmin",],
+            "roles": ["alumno&tutor", "superAdmin","alumno"],
             "path": "/listReservations"
         }
 
