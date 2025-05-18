@@ -15,18 +15,14 @@ const KPIsAdminSection = ({ reservas, tutores, pagos }) => {
         return parseFloat(tutores.reduce((sum, tutor) => sum + (tutor.puntuacion_promedio || 0), 0) /
             tutores.filter(tutor => tutor.puntuacion_promedio > 0).length || 0).toFixed(1);
     };
-
-    // Cálculo de ingreso promedio por tutor
     const getIngresoPromedioTutor = () => {
         const totalIngresos = Object.values(pagos)
             .flat()
-            .filter(p => p.estado === 'completado')
-            .reduce((sum, p) => sum + p.monto, 0);
-        const tutoresActivos = tutores.filter(t => t.cantidad_reseñas > 0).length;
+            .filter(pago => pago.estado === 'completado')
+            .reduce((sum, pago) => sum + pago.monto, 0);
+        const ingresoPromedio = tutores.length > 0 ? totalIngresos / tutores.length : 0;
 
-        return tutoresActivos > 0
-            ? `$${Math.round(totalIngresos / tutoresActivos)}`
-            : '$0';
+        return ingresoPromedio.toFixed(2);
     };
 
     return (

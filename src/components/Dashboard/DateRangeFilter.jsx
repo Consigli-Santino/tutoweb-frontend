@@ -2,7 +2,7 @@
 
 import React from 'react';
 
-const DateRangeFilter = ({ fechaDesde, setFechaDesde, fechaHasta, setFechaHasta, onFilter }) => {
+const DateRangeFilter = ({ fechaDesde, setFechaDesde, fechaHasta, setFechaHasta, onFilter,resetDateRange }) => {
     return (
         <div className="mb-4">
             <div className="d-flex justify-content-end flex-wrap gap-2">
@@ -29,6 +29,12 @@ const DateRangeFilter = ({ fechaDesde, setFechaDesde, fechaHasta, setFechaHasta,
                         />
                     </div>
 
+                    <button
+                        className="btn btn-sm btn-secondary"
+                        onClick={resetDateRange}
+                    >
+                        <i className="bi bi-trash me-1"></i> Limpiar
+                    </button>
                     <button
                         className="btn btn-sm btn-primary"
                         onClick={onFilter}

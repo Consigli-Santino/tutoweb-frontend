@@ -1,6 +1,6 @@
-// Dashboard.jsx - Componente principal refactorizado
+// Dashboard.jsx - Componente principal con la solución completa
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import ApiService from '../../services/ApiService';
@@ -66,25 +66,19 @@ const Dashboard = () => {
     // Colores para los gráficos
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
-    useEffect(() => {
-        fetchDashboardData();
-    }, [activeTab]);
-
-    const fetchDashboardData = async () => {
+    const fetchDashboardData = async (fromDate = fechaDesde, toDate = fechaHasta) => {
         setIsLoading(true);
         setError(null);
 
         try {
             if (activeTab === 'estudiante') {
-                // Fetch detailed reservations for the student with date filters
-                const reservasResponse = await ApiService.fetchReservasDetalladasByEstudiante(fechaDesde, fechaHasta);
+                // Aquí usamos fromDate y toDate en lugar de fechaDesde y fechaHasta
+                const reservasResponse = await ApiService.fetchReservasDetalladasByEstudiante(fromDate, toDate);
                 if (reservasResponse.success) {
                     const reservasFiltradas = reservasResponse.data.filter(reserva => reserva.estado !== 'cancelada');
                     setReservas(reservasFiltradas);
 
                     const idsReservas = reservasFiltradas.map(reserva => reserva.id);
-
-                    // Fetch payments for the reservations
                     const pagosObj = {};
                     const response = await ApiService.fetchPagosByReservas(idsReservas);
                     if (response.success) {
@@ -93,8 +87,6 @@ const Dashboard = () => {
                         });
                     }
                     setPagos(pagosObj);
-
-                    // Fetch student ratings
                     const calificacionesResponse = await ApiService.getCalificacionesByEstudiante();
                     if (calificacionesResponse.success) {
                         setCalificaciones(calificacionesResponse.data);
@@ -102,8 +94,8 @@ const Dashboard = () => {
                 }
             }
             else if (activeTab === 'tutor') {
-                // Obtener reservas como tutor con filtros de fecha
-                const reservasTutorResponse = await ApiService.fetchReservasDetalladasByTutor(fechaDesde, fechaHasta);
+                // Aquí usamos fromDate y toDate
+                const reservasTutorResponse = await ApiService.fetchReservasDetalladasByTutor(fromDate, toDate);
                 if (reservasTutorResponse.success) {
                     setReservas(reservasTutorResponse.data);
                     const idsReservas = reservasTutorResponse.data.map(reserva => reserva.id);
@@ -123,7 +115,6 @@ const Dashboard = () => {
                     }
                 }
             } else if (activeTab === 'admin') {
-                // Obtener datos para admin
                 const usuariosResponse = await ApiService.getAllUsuarios();
                 if (usuariosResponse.success) {
                     setUsuarios(usuariosResponse.data);
@@ -139,10 +130,22 @@ const Dashboard = () => {
                     setMaterias(materiasResponse.data);
                 }
 
-                // Obtener todas las reservas para admin con filtros de fecha
-                const allReservasResponse = await ApiService.getAllReservas(fechaDesde, fechaHasta);
+                // Aquí usamos fromDate y toDate
+                const allReservasResponse = await ApiService.getAllReservas(fromDate, toDate);
                 if (allReservasResponse.success) {
                     setReservas(allReservasResponse.data);
+                    const idsReservas = allReservasResponse.data.map(reserva => reserva.id);
+                    const pagosObj = {};
+                    const response = await ApiService.fetchPagosByReservas(idsReservas);
+                    if (response.success) {
+                        Object.entries(response.data).forEach(([reservaId, pagos]) => {
+                            pagosObj[reservaId] = pagos.map(pago => ({
+                                ...pago,
+                                monto: pago.monto * 0.05
+                            }));
+                        });
+                    }
+                    setPagos(pagosObj);
                 }
             }
         } catch (err) {
@@ -153,16 +156,30 @@ const Dashboard = () => {
         }
     };
 
-    // Función para aplicar filtros de fecha
-    const handleFilterChange = () => {
+    useEffect(() => {
         fetchDashboardData();
+    }, [activeTab]);
+
+    // Función simple que llama a fetchDashboardData con las fechas actuales
+    const handleFilterChange = () => {
+        fetchDashboardData(fechaDesde, fechaHasta);
     };
+
+    // Función para resetear el rango de fechas y aplicar el filtro con los nuevos valores
+    const resetDateRange = () => {
+        const fechaDesde = new Date();
+        fechaDesde.setDate(fechaDesde.getDate() - 60);
+        const newFechaDesde = fechaDesde.toISOString().split('T')[0];
+        const newFechaHasta = new Date().toISOString().split('T')[0];
+        setFechaDesde(newFechaDesde);
+        setFechaHasta(newFechaHasta);
+        fetchDashboardData(newFechaDesde, newFechaHasta);
+    };
+
 
     const handleBack = () => {
         navigate(-1);
     };
-
-    // Procesamiento de datos para métricas
     const getReservasByStatus = () => {
         return _.countBy(reservas, 'estado');
     };
@@ -174,8 +191,6 @@ const Dashboard = () => {
                 countByMateria[reserva.materia.nombre] = (countByMateria[reserva.materia.nombre] || 0) + 1;
             }
         });
-
-        // Convertir a formato para gráficos
         return Object.keys(countByMateria).map(nombre => ({
             name: nombre,
             count: countByMateria[nombre]
@@ -335,6 +350,7 @@ const Dashboard = () => {
                         fechaHasta={fechaHasta}
                         setFechaHasta={setFechaHasta}
                         onFilter={handleFilterChange}
+                        resetDateRange={resetDateRange}
                     />
 
                     {isLoading ? (

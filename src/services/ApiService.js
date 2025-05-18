@@ -62,8 +62,12 @@ class ApiService {
     static getAllMaterias() {
         return ApiService.fetchApi('/materias/all');
     }
-    static getAllReservas() {
-        return ApiService.fetchApi('/reservas/admin/all');
+    static getAllReservas(fechaDesde = null, fechaHasta = null) {
+        let endpoint = '/reservas/admin/all';
+        if (fechaDesde && fechaHasta) {
+            endpoint += `?fecha_desde=${fechaDesde}&fecha_hasta=${fechaHasta}`;
+        }
+        return ApiService.fetchApi(endpoint);
     }
     static getCalificacionesByEstudiante() {
         return ApiService.fetchApi('/calificaciones/estudiante');
@@ -152,21 +156,16 @@ class ApiService {
     static fetchPagoByReserva(reservaId) {
         return ApiService.fetchApi(`/pago/reserva/${reservaId}`);
     }
-
-// Crear un pago
     static createPago(pagoData) {
         return ApiService.fetchApi('/pago/create', 'POST', pagoData);
     }
 
-// Actualizar el estado de un pago
     static updatePagoEstado(pagoId, estado) {
         return ApiService.fetchApi(`/pago/${pagoId}/estado/${estado}`, 'PUT');
     }
 
     static fetchReservasDetalladasByEstudiante(fechaDesde = null, fechaHasta = null) {
         let endpoint = '/reservas/estudiante/detalladas';
-
-        // Agregar parámetros de fecha si están presentes
         if (fechaDesde && fechaHasta) {
             endpoint += `?fecha_desde=${fechaDesde}&fecha_hasta=${fechaHasta}`;
         }
@@ -211,7 +210,6 @@ class ApiService {
         return ApiService.fetchApi('/notificaciones/leer-todas', 'PUT');
     }
 
-    // Métodos para disponibilidad de tutores
     static crearDisponibilidad(disponibilidad) {
         return ApiService.fetchApi('/disponibilidad/create', 'POST', disponibilidad);
     }
