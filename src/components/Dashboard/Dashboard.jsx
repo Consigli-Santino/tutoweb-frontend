@@ -72,7 +72,6 @@ const Dashboard = () => {
 
         try {
             if (activeTab === 'estudiante') {
-                // Aquí usamos fromDate y toDate en lugar de fechaDesde y fechaHasta
                 const reservasResponse = await ApiService.fetchReservasDetalladasByEstudiante(fromDate, toDate);
                 if (reservasResponse.success) {
                     const reservasFiltradas = reservasResponse.data.filter(reserva => reserva.estado !== 'cancelada');
@@ -94,7 +93,6 @@ const Dashboard = () => {
                 }
             }
             else if (activeTab === 'tutor') {
-                // Aquí usamos fromDate y toDate
                 const reservasTutorResponse = await ApiService.fetchReservasDetalladasByTutor(fromDate, toDate);
                 if (reservasTutorResponse.success) {
                     setReservas(reservasTutorResponse.data);

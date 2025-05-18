@@ -11,6 +11,12 @@ class SidebarOptionsService {
             "name": "Dashboard",
             "roles": ["alumno&tutor", "superAdmin",],
             "path": "/dashboards"
+        },
+        {
+            "icon": "table",
+            "name": "Listado Reservas",
+            "roles": ["alumno&tutor", "superAdmin",],
+            "path": "/listReservations"
         }
 
     ]
