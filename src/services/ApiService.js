@@ -41,7 +41,6 @@ class ApiService {
         }
     }
 
-    // Métodos existentes
     static async getUsuarios() {
         return ApiService.fetchApi('/usuarios/all');
     }
@@ -137,7 +136,6 @@ class ApiService {
         return ApiService.fetchApi(`/servicio/${id}`, 'DELETE');
     }
 
-    // Nuevos métodos para gestión de reservas
     static createReserva(reserva) {
         return ApiService.fetchApi('/reserva/create', 'POST', reserva);
     }
@@ -164,7 +162,8 @@ class ApiService {
         return ApiService.fetchApi(`/pago/${pagoId}/estado/${estado}`, 'PUT');
     }
 
-    static fetchReservasDetalladasByEstudiante(fechaDesde = null, fechaHasta = null) {
+    static fetchReservasDetalladasByEstudiante(fechaDesde = null, fechaHasta = null)
+    {
         let endpoint = '/reservas/estudiante/detalladas';
         if (fechaDesde && fechaHasta) {
             endpoint += `?fecha_desde=${fechaDesde}&fecha_hasta=${fechaHasta}`;
@@ -197,7 +196,6 @@ class ApiService {
         return ApiService.fetchApi(`/horarios-disponibles/${servicioId}?fecha=${fecha}`);
     }
 
-    // Métodos para notificaciones
     static fetchNotificaciones(soloNoLeidas = false) {
         return ApiService.fetchApi(`/notificaciones?solo_no_leidas=${soloNoLeidas}`);
     }
@@ -251,6 +249,37 @@ class ApiService {
 
     static async fetchPagosByReservas(idsReservas) {
         return ApiService.fetchApi('/pagos/reservas', 'POST', { reserva_ids: idsReservas });
+    }
+    static createCarrera(carrera) {
+        return ApiService.fetchApi('/carrera/create', 'POST', carrera);
+    }
+
+    static getCarrera(id) {
+        return ApiService.fetchApi(`/carrera/${id}`);
+    }
+
+    static updateCarrera(id, carrera) {
+        return ApiService.fetchApi(`/carrera/${id}`, 'PUT', carrera);
+    }
+
+    static deleteCarrera(id) {
+        return ApiService.fetchApi(`/carrera/${id}`, 'DELETE');
+    }
+
+    static createMateria(materia) {
+        return ApiService.fetchApi('/materia/create', 'POST', materia);
+    }
+
+    static getMateria(id) {
+        return ApiService.fetchApi(`/materia/${id}`);
+    }
+
+    static updateMateria(id, materia) {
+        return ApiService.fetchApi(`/materia/${id}`, 'PUT', materia);
+    }
+
+    static deleteMateria(id) {
+        return ApiService.fetchApi(`/materia/${id}`, 'DELETE');
     }
 }
 

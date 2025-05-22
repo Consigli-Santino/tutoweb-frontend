@@ -15,13 +15,13 @@ import TutorsCRUDMaterias from "./components/tutors/TutorsMaterias/TutorsCRUDMat
 import TutorsCRUDDisponibilidad from "./components/tutors/TutorsDisponibility/TutorsCRUDDisponibilidad.jsx";
 import TutorProfile from "./components/tutors/TutorProfile/TutorProfile.jsx";
 import TutorsCRUDServiciosTutoria from "./components/tutors/TutorsCRUDServiciosTutoria/TutorsCRUDServiciosTutoria.jsx";
-import AlumnoReservas from "./components/AlumnosTutores/AlumnoReservas.jsx";
 import PaymentPending from "./components/Payments/PaymentPending.jsx";
 import PaymentFailure from "./components/Payments/PaymentFailure.jsx";
 import PaymentSuccess from "./components/Payments/PaymentSucces.jsx";
 import ReservasContainer from "./components/AlumnosTutores/ReservasContainer.jsx";
 import Dashboard from "./components/Dashboard/Dashboard.jsx";
 import ListadoReservas from "./components/AlumnosTutores/ListadoReservas.jsx";
+import CarrerasMateriasCRUD from "./components/Carreras/CarrerasMateriasCRUD.jsx";
 
 function App() {
     return (
@@ -79,6 +79,11 @@ function App() {
                             <Route path="/users" element={
                                 <ProtectedRoute path="/users">
                                     <Users />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/matcarr" element={
+                                <ProtectedRoute path="/matcarr">
+                                    <CarrerasMateriasCRUD />
                                 </ProtectedRoute>
                             } />
                             <Route path="/tutores/:email" element={

@@ -32,7 +32,17 @@ const ReservasContainer = () => {
     // Confirmation states
     const [confirmActionId, setConfirmActionId] = useState(null);
     const [actionType, setActionType] = useState(null);
-
+    //Dates
+    const [fechaDesde, setFechaDesde] = useState(() => {
+        const fechaDesde = new Date();
+        fechaDesde.setDate(fechaDesde.getDate() - 7);
+        return fechaDesde.toISOString().split('T')[0];
+    });
+    const [fechaHasta, setFechaHasta] = useState(() => {
+        const fechaHasta = new Date();
+        fechaHasta.setDate(fechaHasta.getDate() + 14); // 14 days in the future
+        return fechaHasta.toISOString().split('T')[0];
+    });
     // Modal states
     const [showJitsiModal, setShowJitsiModal] = useState(false);
     const [activeJitsiRoom, setActiveJitsiRoom] = useState(null);
@@ -90,7 +100,7 @@ const ReservasContainer = () => {
             let response;
 
             if (activeTab === 'estudiante') {
-                response = await ApiService.fetchReservasDetalladasByEstudiante();
+                response = await ApiService.fetchReservasDetalladasByEstudiante(fechaDesde,fechaHasta);
 
                 if (response.success) {
                     // Sort reservations
@@ -114,7 +124,7 @@ const ReservasContainer = () => {
                     throw new Error(response.message || 'Error al obtener reservas');
                 }
             } else {
-                response = await ApiService.fetchReservasDetalladasByTutor();
+                response = await ApiService.fetchReservasDetalladasByTutor(fechaDesde,fechaHasta);
 
                 if (response.success) {
                     // Sort reservations
@@ -462,15 +472,8 @@ const ReservasContainer = () => {
         return pago && pago.metodo_pago === 'efectivo' && pago.estado === 'pendiente';
     };
 
-    // New function to check if reservation can be rated
     const canRateReserva = (reserva) => {
-        // Logging para verificar el estado de la reserva
-        console.log(`Verificando reserva ${reserva.id}:`);
-        console.log(`- Estado: ${reserva.estado}`);
-        console.log(`- Pago: ${reservaPagos[reserva.id]?.estado || 'No hay pago'}`);
-        console.log(`- Calificada: ${reserva.calificado ? 'Sí' : 'No'}`);
 
-        // Solo se pueden calificar reservas completadas
         if (activeTab !== 'estudiante' || reserva.estado !== 'completada') {
             return false;
         }
