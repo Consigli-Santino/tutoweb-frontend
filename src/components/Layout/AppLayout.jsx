@@ -10,7 +10,6 @@ const AppLayout = () => {
     const { user, availableRoutesSideBar, availableRoutesHomeBar, isAuthenticated } = useAuth();
     const location = useLocation();
 
-    // No renderizar si no está autenticado o la ruta es login o form-user
     const publicRoutes = ['/login', '/', '/form-user', '/unauthorized'];
     if (publicRoutes.includes(location.pathname) || !isAuthenticated) {
         return <Outlet />;

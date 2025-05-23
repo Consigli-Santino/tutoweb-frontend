@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ApiService from '../../services/ApiService';
 import { useEntidades } from '../../context/EntidadesContext';
+import ExcelExportService from "../../services/ExcelExportService.js";
 
 const CarrerasCRUD = () => {
     const { carreras: contextCarreras, refreshCommonData } = useEntidades();
@@ -108,7 +109,11 @@ const CarrerasCRUD = () => {
             [name]: value
         }));
     };
-
+    const exportToExcel = async () => {
+        setIsLoading(true);
+        ExcelExportService.exportCarrerasToExcel(carreras)
+        fetchCarreras();
+    }
     const handleSaveCarrera = async (e) => {
         e.preventDefault();
         setIsLoading(true);
@@ -179,6 +184,12 @@ const CarrerasCRUD = () => {
                         </div>
                     </div>
                     <div className="col-12 col-md-6 text-end mb-2">
+                        <button
+                            className="btn btn-sm btn-outline-success rounded-pill me-2"
+                            onClick={exportToExcel}
+                        >
+                            <i className="bi bi-file-excel me-1"></i> Excel
+                        </button>
                         <button
                             className="btn btn-sm py-2 rounded-3 btn-primary"
                             onClick={handleShowCreateModal}

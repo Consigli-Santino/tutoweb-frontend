@@ -9,13 +9,13 @@ import ReservasTable from './ReservasTable';
 import ReservasStats from './ReservasStats';
 import ApiService from '../../services/ApiService';
 import '../../commonTables.css';
+import ExcelExportService from '../../services/ExcelExportService';
 
 const ListadoReservas = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { materias } = useEntidades();
 
-    // Estados principales
     const [reservas, setReservas] = useState([]);
     const [pagos, setPagos] = useState({});
     const [filteredReservas, setFilteredReservas] = useState([]);
@@ -24,7 +24,6 @@ const ListadoReservas = () => {
     const [success, setSuccess] = useState(null);
     const [activeTab, setActiveTab] = useState(null);
 
-    // Estados de filtros
     const [searchTerm, setSearchTerm] = useState('');
     const [estadoFilter, setEstadoFilter] = useState('');
     const [materiaFilter, setMateriaFilter] = useState('');
@@ -38,7 +37,6 @@ const ListadoReservas = () => {
         return new Date().toISOString().split('T')[0];
     });
 
-    // Estados de paginación
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 10;
 
@@ -47,7 +45,6 @@ const ListadoReservas = () => {
     const isStudent = user && (user.roles.includes('estudiante') || user.roles.includes('alumno') || user.roles.includes('alumno&tutor'));
     const isAdmin = user && (user.roles.includes('admin') || user.roles.includes('superAdmin'));
 
-    // Establecer la pestaña activa basada en el rol del usuario
     useEffect(() => {
         if (isStudent) {
             setActiveTab('estudiante');
@@ -58,11 +55,9 @@ const ListadoReservas = () => {
         }
     }, [isStudent, isTutor, isAdmin]);
 
-    // Obtener datos de reservas según el rol
     const fetchReservasData = useCallback(async () => {
         setIsLoading(true);
         setError(null);
-
         try {
             let reservasResponse;
 
@@ -73,16 +68,12 @@ const ListadoReservas = () => {
             } else if (activeTab === 'admin') {
                 reservasResponse = await ApiService.getAllReservas(fechaDesde, fechaHasta);
             }
-
             if (reservasResponse.success) {
                 setReservas(reservasResponse.data);
                 setFilteredReservas(reservasResponse.data);
-                setCurrentPage(1); // Reset pagination
-
-                // Obtener pagos asociados a las reservas
+                setCurrentPage(1);
                 const idsReservas = reservasResponse.data.map(reserva => reserva.id);
                 const pagosResponse = await ApiService.fetchPagosByReservas(idsReservas);
-
                 if (pagosResponse.success) {
                     setPagos(pagosResponse.data);
                 }
@@ -103,7 +94,6 @@ const ListadoReservas = () => {
         }
     }, [activeTab, fetchReservasData]);
 
-    // Aplicar filtros
     useEffect(() => {
         let result = [...reservas];
 
@@ -140,16 +130,16 @@ const ListadoReservas = () => {
         }
 
         setFilteredReservas(result);
-        setCurrentPage(1); // Reset pagination when filters change
+        console.log(filteredReservas);
+        setCurrentPage(1);
     }, [searchTerm, estadoFilter, materiaFilter, modalidadFilter, reservas]);
 
-    // Calcular elementos paginados
     const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
     const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
     const currentReservas = filteredReservas.slice(indexOfFirstItem, indexOfLastItem);
     const totalPages = Math.ceil(filteredReservas.length / ITEMS_PER_PAGE);
 
-    // Handlers
+
     const handleFilterChange = () => {
         fetchReservasData();
     };
@@ -179,6 +169,7 @@ const ListadoReservas = () => {
 
     const exportToExcel = () => {
         setSuccess('Exportando a Excel...');
+        ExcelExportService.exportReservasToExcel(filteredReservas, activeTab)
         setTimeout(() => setSuccess(null), 3000);
     };
 
@@ -228,12 +219,6 @@ const ListadoReservas = () => {
                     <div className="d-flex justify-content-between align-items-center">
                         <h1 className="fw-bold fs-4 mb-0">Listado de Reservas</h1>
                         <div>
-                            <button
-                                className="btn btn-sm btn-outline-primary rounded-pill me-2"
-                                onClick={handlePrint}
-                            >
-                                <i className="bi bi-printer me-1"></i> Imprimir
-                            </button>
                             <button
                                 className="btn btn-sm btn-outline-success rounded-pill me-2"
                                 onClick={exportToExcel}

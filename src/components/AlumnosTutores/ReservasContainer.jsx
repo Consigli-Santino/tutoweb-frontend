@@ -188,7 +188,6 @@ const ReservasContainer = () => {
                 setReservas(prevReservas => {
                     const updatedReservas = prevReservas.map(reserva => {
                         const isCalificada = reservasCalificadas.includes(reserva.id);
-                        console.log(`Marcando reserva ${reserva.id} como ${isCalificada ? 'calificada' : 'no calificada'}`);
                         return {
                             ...reserva,
                             calificado: isCalificada
