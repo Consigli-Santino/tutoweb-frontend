@@ -2,15 +2,18 @@ import React, { useState, useEffect } from 'react';
 import ApiService from '../../services/ApiService';
 import { useEntidades } from '../../context/EntidadesContext';
 import ExcelExportService from "../../services/ExcelExportService.js";
+import '../../commonTables.css';
 
 const CarrerasCRUD = () => {
     const { carreras: contextCarreras, refreshCommonData } = useEntidades();
     const [carreras, setCarreras] = useState([]);
     const [filteredCarreras, setFilteredCarreras] = useState([]);
-    const [displayedCarreras, setDisplayedCarreras] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+
+    const ITEMS_PER_PAGE = 10;
     const [showModal, setShowModal] = useState(false);
     const [modalMode, setModalMode] = useState('create');
     const [currentCarrera, setCurrentCarrera] = useState({
@@ -18,8 +21,6 @@ const CarrerasCRUD = () => {
         descripcion: '',
         facultad: 'Universidad Tecnológica Nacional'
     });
-
-    const ITEMS_PER_PAGE = 10;
 
     useEffect(() => {
         if (contextCarreras.length > 0) {
@@ -34,11 +35,6 @@ const CarrerasCRUD = () => {
     useEffect(() => {
         applyFilters();
     }, [searchTerm, carreras]);
-
-    useEffect(() => {
-        const sortedCarreras = [...filteredCarreras].sort((a, b) => b.id - a.id);
-        setDisplayedCarreras(sortedCarreras.slice(0, ITEMS_PER_PAGE));
-    }, [filteredCarreras]);
 
     const fetchCarreras = async () => {
         setIsLoading(true);
@@ -61,6 +57,7 @@ const CarrerasCRUD = () => {
     const applyFilters = () => {
         if (!searchTerm.trim()) {
             setFilteredCarreras(carreras);
+            setCurrentPage(1);
             return;
         }
 
@@ -71,10 +68,38 @@ const CarrerasCRUD = () => {
             carrera.facultad?.toLowerCase().includes(searchTermLower)
         );
         setFilteredCarreras(filtered);
+        setCurrentPage(1);
     };
 
     const handleSearchChange = (e) => {
         setSearchTerm(e.target.value);
+    };
+
+    const clearFilters = () => {
+        setSearchTerm('');
+        setCurrentPage(1);
+    };
+
+    // Paginación
+    const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
+    const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
+    const currentCarreras = filteredCarreras.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(filteredCarreras.length / ITEMS_PER_PAGE);
+
+    const handlePageChange = (pageNumber) => {
+        setCurrentPage(pageNumber);
+    };
+
+    const handlePrevPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
     };
 
     const handleShowCreateModal = () => {
@@ -109,11 +134,13 @@ const CarrerasCRUD = () => {
             [name]: value
         }));
     };
+
     const exportToExcel = async () => {
         setIsLoading(true);
-        ExcelExportService.exportCarrerasToExcel(carreras)
-        fetchCarreras();
-    }
+        ExcelExportService.exportCarrerasToExcel(filteredCarreras);
+        setIsLoading(false);
+    };
+
     const handleSaveCarrera = async (e) => {
         e.preventDefault();
         setIsLoading(true);
@@ -167,13 +194,20 @@ const CarrerasCRUD = () => {
 
     return (
         <div>
-            <div className="mb-4 p-3 bg-light rounded shadow-sm">
+            {error && (
+                <div className="alert alert-danger shadow-sm rounded-3" role="alert">
+                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                    {error}
+                </div>
+            )}
+
+            <div className="filter-container mb-4 p-3 shadow-sm">
                 <div className="row g-2">
                     <div className="col-12 col-md-6 mb-2">
                         <div className="input-group">
-              <span className="input-group-text bg-white border-0">
-                <i className="bi bi-search text-muted"></i>
-              </span>
+                            <span className="input-group-text bg-white border-0">
+                                <i className="bi bi-search text-muted"></i>
+                            </span>
                             <input
                                 type="text"
                                 className="form-control form-control-sm border-0 py-2"
@@ -183,71 +217,55 @@ const CarrerasCRUD = () => {
                             />
                         </div>
                     </div>
-                    <div className="col-12 col-md-6 text-end mb-2">
-                        <button
-                            className="btn btn-sm btn-outline-success rounded-pill me-2"
-                            onClick={exportToExcel}
-                        >
-                            <i className="bi bi-file-excel me-1"></i> Excel
-                        </button>
-                        <button
-                            className="btn btn-sm py-2 rounded-3 btn-primary"
-                            onClick={handleShowCreateModal}
-                        >
-                            <i className="bi bi-plus-circle me-2"></i>
-                            Nueva Carrera
-                        </button>
+                    <div className="col-12 col-md-6">
+                        <div className="d-flex align-items-center justify-content-between">
+                            <button
+                                className="btn btn-sm py-2 rounded-3 btn-light border-0 me-2"
+                                onClick={clearFilters}
+                                title="Limpiar filtros"
+                            >
+                                <i className="bi bi-trash"></i> Limpiar
+                            </button>
+                            <button
+                                className="btn btn-sm btn-outline-success rounded-pill"
+                                onClick={exportToExcel}
+                            >
+                                <i className="bi bi-file-excel me-1"></i> Excel
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {error && (
-                <div className="alert alert-danger mb-4" role="alert">
-                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
-                    {error}
-                </div>
-            )}
-
             <div className="table-responsive">
-                <table className="table table-hover">
+                <table className="table table-hover table-rounded" style={{ borderCollapse: 'separate', borderSpacing: '0 8px' }}>
                     <thead>
-                    <tr className="bg-light">
-                        <th>Nombre</th>
-                        <th>Facultad</th>
-                        <th>Descripción</th>
-                        <th>Acciones</th>
+                    <tr className="table-header">
+                        <th className="border-0">Nombre</th>
+                        <th className="border-0">Facultad</th>
+                        <th className="border-0">Descripción</th>
+                        <th className="border-0">Acciones</th>
                     </tr>
                     </thead>
                     <tbody>
-                    {isLoading ? (
-                        <tr>
-                            <td colSpan="5" className="text-center py-5">
-                                <div className="d-flex flex-column align-items-center">
-                                    <div className="spinner-border text-primary" role="status">
-                                        <span className="visually-hidden">Cargando...</span>
-                                    </div>
-                                    <span className="mt-2 text-muted">Cargando carreras...</span>
-                                </div>
-                            </td>
-                        </tr>
-                    ) : displayedCarreras.length > 0 ? (
-                        displayedCarreras.map(carrera => (
-                            <tr key={carrera.id}>
-                                <td>{carrera.nombre}</td>
-                                <td>{carrera.facultad}</td>
-                                <td>
+                    {currentCarreras.length > 0 ? (
+                        currentCarreras.map(carrera => (
+                            <tr key={carrera.id} className="table-row hover-row">
+                                <td className="border-0 py-3">{carrera.nombre}</td>
+                                <td className="border-0 py-3">{carrera.facultad}</td>
+                                <td className="border-0 py-3">
                                     {carrera.descripcion || <span className="text-muted fst-italic">Sin descripción</span>}
                                 </td>
-                                <td>
+                                <td className="border-0 py-3">
                                     <div className="d-flex">
                                         <button
-                                            className="btn btn-sm me-1 btn-outline-primary"
+                                            className="btn btn-sm me-1 btn-action-edit"
                                             onClick={() => handleShowEditModal(carrera)}
                                         >
                                             <i className="bi bi-pencil"></i>
                                         </button>
                                         <button
-                                            className="btn btn-sm btn-outline-danger"
+                                            className="btn btn-sm btn-action-delete"
                                             onClick={() => handleDeleteCarrera(carrera.id)}
                                         >
                                             <i className="bi bi-trash"></i>
@@ -258,17 +276,26 @@ const CarrerasCRUD = () => {
                         ))
                     ) : (
                         <tr>
-                            <td colSpan="5" className="text-center py-5">
-                                <div className="d-flex flex-column align-items-center">
-                                    <i className="bi bi-search fs-1 text-muted"></i>
-                                    <span>No hay carreras que coincidan con la búsqueda</span>
-                                    <button
-                                        className="btn btn-sm mt-3 btn-primary"
-                                        onClick={() => setSearchTerm('')}
-                                    >
-                                        Limpiar filtros
-                                    </button>
-                                </div>
+                            <td colSpan="4" className="text-center border-0 py-5">
+                                {isLoading ? (
+                                    <div className="d-flex flex-column align-items-center">
+                                        <div className="spinner-border" style={{ color: '#283048' }} role="status">
+                                            <span className="visually-hidden">Cargando...</span>
+                                        </div>
+                                        <span className="mt-2 text-muted">Cargando carreras...</span>
+                                    </div>
+                                ) : (
+                                    <div className="d-flex flex-column align-items-center empty-state">
+                                        <i className="bi bi-search empty-state-icon"></i>
+                                        <span>No hay carreras que coincidan con los filtros aplicados</span>
+                                        <button
+                                            className="btn btn-sm mt-3 app-primary"
+                                            onClick={clearFilters}
+                                        >
+                                            Limpiar filtros
+                                        </button>
+                                    </div>
+                                )}
                             </td>
                         </tr>
                     )}
@@ -278,11 +305,85 @@ const CarrerasCRUD = () => {
 
             <div className="d-flex justify-content-between align-items-center mt-3">
                 <div className="text-muted small">
-                    Mostrando {displayedCarreras.length} de {filteredCarreras.length} carreras (últimas {ITEMS_PER_PAGE})
+                    Mostrando {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filteredCarreras.length)} de {filteredCarreras.length} carreras
                 </div>
             </div>
 
-            {/* Modal para crear/editar carrera usando Bootstrap nativo */}
+            {/* Paginación */}
+            {filteredCarreras.length > ITEMS_PER_PAGE && (
+                <nav aria-label="Paginación de carreras" className="mt-4">
+                    <div className="d-flex justify-content-between align-items-center">
+                        <div className="text-muted small">
+                            Página {currentPage} de {totalPages}
+                        </div>
+                        <ul className="pagination pagination-sm mb-0">
+                            <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                                <button
+                                    className="page-link"
+                                    onClick={handlePrevPage}
+                                    disabled={currentPage === 1}
+                                >
+                                    <i className="bi bi-chevron-left"></i>
+                                </button>
+                            </li>
+
+                            {/* Mostrar páginas */}
+                            {[...Array(totalPages)].map((_, index) => {
+                                const pageNumber = index + 1;
+                                // Mostrar solo algunas páginas para evitar demasiados botones
+                                if (
+                                    pageNumber === 1 ||
+                                    pageNumber === totalPages ||
+                                    (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
+                                ) {
+                                    return (
+                                        <li key={pageNumber} className={`page-item ${currentPage === pageNumber ? 'active' : ''}`}>
+                                            <button
+                                                className="page-link"
+                                                onClick={() => handlePageChange(pageNumber)}
+                                            >
+                                                {pageNumber}
+                                            </button>
+                                        </li>
+                                    );
+                                } else if (
+                                    pageNumber === currentPage - 2 ||
+                                    pageNumber === currentPage + 2
+                                ) {
+                                    return (
+                                        <li key={pageNumber} className="page-item disabled">
+                                            <span className="page-link">...</span>
+                                        </li>
+                                    );
+                                }
+                                return null;
+                            })}
+
+                            <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                                <button
+                                    className="page-link"
+                                    onClick={handleNextPage}
+                                    disabled={currentPage === totalPages}
+                                >
+                                    <i className="bi bi-chevron-right"></i>
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </nav>
+            )}
+
+            {/* Espacio adicional para evitar que el HomeBar tape contenido */}
+            <div className="home-bar-spacing"></div>
+
+            <button
+                className="btn btn-lg rounded-circle position-fixed shadow btn-float-add"
+                onClick={handleShowCreateModal}
+            >
+                <i className="bi bi-plus fs-4"></i>
+            </button>
+
+            {/* Modal para crear/editar carrera */}
             <div className={`modal fade ${showModal ? 'show' : ''}`} style={{ display: showModal ? 'block' : 'none' }} tabIndex="-1" aria-hidden={!showModal}>
                 <div className="modal-dialog modal-dialog-centered">
                     <div className="modal-content">

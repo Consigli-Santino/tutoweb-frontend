@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import ApiService from '../../services/ApiService';
 import { useEntidades } from '../../context/EntidadesContext';
 import ExcelExportService from "../../services/ExcelExportService.js";
+import CustomSelect from '../../components/CustomInputs/CustomSelect.jsx';
+import '../../commonTables.css';
 
 const MateriasCRUD = () => {
     const { materias: contextMaterias, carreras: contextCarreras, refreshCommonData } = useEntidades();
@@ -9,11 +11,13 @@ const MateriasCRUD = () => {
     const [materias, setMaterias] = useState([]);
     const [carreras, setCarreras] = useState([]);
     const [filteredMaterias, setFilteredMaterias] = useState([]);
-    const [displayedMaterias, setDisplayedMaterias] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [carreraFilter, setCarreraFilter] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+
+    const ITEMS_PER_PAGE = 10;
 
     const [showModal, setShowModal] = useState(false);
     const [modalMode, setModalMode] = useState('create');
@@ -24,10 +28,6 @@ const MateriasCRUD = () => {
         año_plan: ''
     });
 
-    // Número de materias a mostrar
-    const ITEMS_PER_PAGE = 10;
-
-    // Usar materias y carreras del contexto si están disponibles
     useEffect(() => {
         if (contextMaterias.length > 0) {
             setMaterias(contextMaterias);
@@ -41,8 +41,6 @@ const MateriasCRUD = () => {
     useEffect(() => {
         if (contextCarreras.length > 0) {
             setCarreras(contextCarreras);
-
-            // Inicializar el carrera_id de la materia actual si no está establecido
             if (contextCarreras.length > 0 && !currentMateria.carrera_id) {
                 setCurrentMateria(prev => ({
                     ...prev,
@@ -57,11 +55,6 @@ const MateriasCRUD = () => {
     useEffect(() => {
         applyFilters();
     }, [searchTerm, carreraFilter, materias]);
-
-    useEffect(() => {
-        const sortedMaterias = [...filteredMaterias].sort((a, b) => b.id - a.id);
-        setDisplayedMaterias(sortedMaterias.slice(0, ITEMS_PER_PAGE));
-    }, [filteredMaterias]);
 
     const fetchMaterias = async () => {
         setIsLoading(true);
@@ -118,6 +111,7 @@ const MateriasCRUD = () => {
         }
 
         setFilteredMaterias(result);
+        setCurrentPage(1);
     };
 
     const handleSearchChange = (e) => {
@@ -126,6 +120,34 @@ const MateriasCRUD = () => {
 
     const handleCarreraFilterChange = (e) => {
         setCarreraFilter(e.target.value);
+    };
+
+    const clearFilters = () => {
+        setSearchTerm('');
+        setCarreraFilter('');
+        setCurrentPage(1);
+    };
+
+    // Paginación
+    const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
+    const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
+    const currentMaterias = filteredMaterias.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(filteredMaterias.length / ITEMS_PER_PAGE);
+
+    const handlePageChange = (pageNumber) => {
+        setCurrentPage(pageNumber);
+    };
+
+    const handlePrevPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
     };
 
     const handleShowCreateModal = () => {
@@ -179,7 +201,6 @@ const MateriasCRUD = () => {
 
             if (response.success) {
                 setShowModal(false);
-                // Refrescar datos en el contexto global
                 refreshCommonData();
                 await fetchMaterias();
             } else {
@@ -191,11 +212,12 @@ const MateriasCRUD = () => {
             setIsLoading(false);
         }
     };
+
     const exportToExcel = async () => {
         setIsLoading(true);
-        ExcelExportService.exportMateriasToExcel(materias)
-        fetchMaterias()
-    }
+        ExcelExportService.exportMateriasToExcel(filteredMaterias);
+        setIsLoading(false);
+    };
 
     const handleDeleteMateria = async (id) => {
         if (!window.confirm('¿Está seguro que desea eliminar esta materia?')) {
@@ -228,13 +250,20 @@ const MateriasCRUD = () => {
 
     return (
         <div>
-            <div className="mb-4 p-3 bg-light rounded shadow-sm">
+            {error && (
+                <div className="alert alert-danger shadow-sm rounded-3" role="alert">
+                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                    {error}
+                </div>
+            )}
+
+            <div className="filter-container mb-4 p-3 shadow-sm">
                 <div className="row g-2">
                     <div className="col-12 col-md-4 mb-2">
                         <div className="input-group">
-              <span className="input-group-text bg-white border-0">
-                <i className="bi bi-search text-muted"></i>
-              </span>
+                            <span className="input-group-text bg-white border-0">
+                                <i className="bi bi-search text-muted"></i>
+                            </span>
                             <input
                                 type="text"
                                 className="form-control form-control-sm border-0 py-2"
@@ -244,93 +273,75 @@ const MateriasCRUD = () => {
                             />
                         </div>
                     </div>
-                    <div className="col-12 col-md-4 mb-2">
-                        <select
-                            className="form-select form-select-sm py-2"
-                            value={carreraFilter}
-                            onChange={handleCarreraFilterChange}
-                        >
-                            <option value="">Todas las carreras</option>
-                            {carreras.map(carrera => (
-                                <option key={carrera.id} value={carrera.id}>
-                                    {carrera.nombre}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="col-12 col-md-4 text-end mb-2">
-                        <button
-                            className="btn btn-sm btn-outline-success rounded-pill me-2"
-                            onClick={exportToExcel}
-                        >
-                            <i className="bi bi-file-excel me-1"></i> Excel
-                        </button>
-                        <button
-                            className="btn btn-sm py-2 rounded-3 btn-primary"
-                            onClick={handleShowCreateModal}
-                        >
-                            <i className="bi bi-plus-circle me-2"></i>
-                            Nueva Materia
-                        </button>
+                    <div className="col-12 col-md-8">
+                        <div className="row g-2">
+                            <div className="col-md-6 col-12 mb-2">
+                                <CustomSelect
+                                    value={carreraFilter}
+                                    onChange={handleCarreraFilterChange}
+                                    options={carreras}
+                                    placeholder="Todas las carreras"
+                                    className="bg-white border-0 py-2 rounded-3"
+                                    variant="light"
+                                />
+                            </div>
+                            <div className="col-md-6 col-12 mb-2 d-flex align-items-center justify-content-between">
+                                <button
+                                    className="btn btn-sm py-2 rounded-3 btn-light border-0 me-2"
+                                    onClick={clearFilters}
+                                    title="Limpiar filtros"
+                                >
+                                    <i className="bi bi-trash"></i> Limpiar
+                                </button>
+                                <button
+                                    className="btn btn-sm btn-outline-success rounded-pill"
+                                    onClick={exportToExcel}
+                                >
+                                    <i className="bi bi-file-excel me-1"></i> Excel
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {error && (
-                <div className="alert alert-danger mb-4" role="alert">
-                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
-                    {error}
-                </div>
-            )}
-
             <div className="table-responsive">
-                <table className="table table-hover">
+                <table className="table table-hover table-rounded" style={{ borderCollapse: 'separate', borderSpacing: '0 8px' }}>
                     <thead>
-                    <tr className="bg-light">
-                        <th>Nombre</th>
-                        <th>Carrera</th>
-                        <th>Año Plan</th>
-                        <th>Descripción</th>
-                        <th>Acciones</th>
+                    <tr className="table-header">
+                        <th className="border-0">Nombre</th>
+                        <th className="border-0">Carrera</th>
+                        <th className="border-0">Año Plan</th>
+                        <th className="border-0">Descripción</th>
+                        <th className="border-0">Acciones</th>
                     </tr>
                     </thead>
                     <tbody>
-                    {isLoading ? (
-                        <tr>
-                            <td colSpan="6" className="text-center py-5">
-                                <div className="d-flex flex-column align-items-center">
-                                    <div className="spinner-border text-primary" role="status">
-                                        <span className="visually-hidden">Cargando...</span>
-                                    </div>
-                                    <span className="mt-2 text-muted">Cargando materias...</span>
-                                </div>
-                            </td>
-                        </tr>
-                    ) : displayedMaterias.length > 0 ? (
-                        displayedMaterias.map(materia => (
-                            <tr key={materia.id}>
-                                <td>{materia.nombre}</td>
-                                <td>
-                    <span className="badge bg-info text-dark">
-                      {getCarreraById(materia.carrera_id)}
-                    </span>
+                    {currentMaterias.length > 0 ? (
+                        currentMaterias.map(materia => (
+                            <tr key={materia.id} className="table-row hover-row">
+                                <td className="border-0 py-3">{materia.nombre}</td>
+                                <td className="border-0 py-3">
+                                        <span className="badge bg-success">
+                                            {getCarreraById(materia.carrera_id)}
+                                        </span>
                                 </td>
-                                <td>
+                                <td className="border-0 py-3">
                                     {materia.año_plan || <span className="text-muted fst-italic">N/A</span>}
                                 </td>
-                                <td>
+                                <td className="border-0 py-3">
                                     {materia.descripcion || <span className="text-muted fst-italic">Sin descripción</span>}
                                 </td>
-                                <td>
+                                <td className="border-0 py-3">
                                     <div className="d-flex">
                                         <button
-                                            className="btn btn-sm me-1 btn-outline-primary"
+                                            className="btn btn-sm me-1 btn-action-edit"
                                             onClick={() => handleShowEditModal(materia)}
                                         >
                                             <i className="bi bi-pencil"></i>
                                         </button>
                                         <button
-                                            className="btn btn-sm btn-outline-danger"
+                                            className="btn btn-sm btn-action-delete"
                                             onClick={() => handleDeleteMateria(materia.id)}
                                         >
                                             <i className="bi bi-trash"></i>
@@ -341,20 +352,26 @@ const MateriasCRUD = () => {
                         ))
                     ) : (
                         <tr>
-                            <td colSpan="6" className="text-center py-5">
-                                <div className="d-flex flex-column align-items-center">
-                                    <i className="bi bi-search fs-1 text-muted"></i>
-                                    <span>No hay materias que coincidan con los filtros aplicados</span>
-                                    <button
-                                        className="btn btn-sm mt-3 btn-primary"
-                                        onClick={() => {
-                                            setSearchTerm('');
-                                            setCarreraFilter('');
-                                        }}
-                                    >
-                                        Limpiar filtros
-                                    </button>
-                                </div>
+                            <td colSpan="5" className="text-center border-0 py-5">
+                                {isLoading ? (
+                                    <div className="d-flex flex-column align-items-center">
+                                        <div className="spinner-border" style={{ color: '#283048' }} role="status">
+                                            <span className="visually-hidden">Cargando...</span>
+                                        </div>
+                                        <span className="mt-2 text-muted">Cargando materias...</span>
+                                    </div>
+                                ) : (
+                                    <div className="d-flex flex-column align-items-center empty-state">
+                                        <i className="bi bi-search empty-state-icon"></i>
+                                        <span>No hay materias que coincidan con los filtros aplicados</span>
+                                        <button
+                                            className="btn btn-sm mt-3 app-primary"
+                                            onClick={clearFilters}
+                                        >
+                                            Limpiar filtros
+                                        </button>
+                                    </div>
+                                )}
                             </td>
                         </tr>
                     )}
@@ -364,11 +381,85 @@ const MateriasCRUD = () => {
 
             <div className="d-flex justify-content-between align-items-center mt-3">
                 <div className="text-muted small">
-                    Mostrando {displayedMaterias.length} de {filteredMaterias.length} materias (últimas {ITEMS_PER_PAGE})
+                    Mostrando {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filteredMaterias.length)} de {filteredMaterias.length} materias
                 </div>
             </div>
 
-            {/* Modal para crear/editar materia usando Bootstrap nativo */}
+            {/* Paginación */}
+            {filteredMaterias.length > ITEMS_PER_PAGE && (
+                <nav aria-label="Paginación de materias" className="mt-4">
+                    <div className="d-flex justify-content-between align-items-center">
+                        <div className="text-muted small">
+                            Página {currentPage} de {totalPages}
+                        </div>
+                        <ul className="pagination pagination-sm mb-0">
+                            <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                                <button
+                                    className="page-link"
+                                    onClick={handlePrevPage}
+                                    disabled={currentPage === 1}
+                                >
+                                    <i className="bi bi-chevron-left"></i>
+                                </button>
+                            </li>
+
+                            {/* Mostrar páginas */}
+                            {[...Array(totalPages)].map((_, index) => {
+                                const pageNumber = index + 1;
+                                // Mostrar solo algunas páginas para evitar demasiados botones
+                                if (
+                                    pageNumber === 1 ||
+                                    pageNumber === totalPages ||
+                                    (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
+                                ) {
+                                    return (
+                                        <li key={pageNumber} className={`page-item ${currentPage === pageNumber ? 'active' : ''}`}>
+                                            <button
+                                                className="page-link"
+                                                onClick={() => handlePageChange(pageNumber)}
+                                            >
+                                                {pageNumber}
+                                            </button>
+                                        </li>
+                                    );
+                                } else if (
+                                    pageNumber === currentPage - 2 ||
+                                    pageNumber === currentPage + 2
+                                ) {
+                                    return (
+                                        <li key={pageNumber} className="page-item disabled">
+                                            <span className="page-link">...</span>
+                                        </li>
+                                    );
+                                }
+                                return null;
+                            })}
+
+                            <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                                <button
+                                    className="page-link"
+                                    onClick={handleNextPage}
+                                    disabled={currentPage === totalPages}
+                                >
+                                    <i className="bi bi-chevron-right"></i>
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </nav>
+            )}
+
+            {/* Espacio adicional para evitar que el HomeBar tape contenido */}
+            <div className="home-bar-spacing"></div>
+
+            <button
+                className="btn btn-lg rounded-circle position-fixed shadow btn-float-add"
+                onClick={handleShowCreateModal}
+            >
+                <i className="bi bi-plus fs-4"></i>
+            </button>
+
+            {/* Modal para crear/editar materia */}
             <div className={`modal fade ${showModal ? 'show' : ''}`} style={{ display: showModal ? 'block' : 'none' }} tabIndex="-1" aria-hidden={!showModal}>
                 <div className="modal-dialog modal-dialog-centered">
                     <div className="modal-content">

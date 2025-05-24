@@ -20,7 +20,7 @@ import HistorialPagosChart from './HistorialPagosChart';
 import KPIsAdminSection from './KPIsAdminSection';
 import TutoresMejorCalificadosChart from './TutoresMejorCalificadosChart';
 import MateriasDemandadasChart from './MateriasDemandadasChart';
-import ReservasTable from './ReservasTable';
+import ListadoReservas from "../AlumnosTutores/ListadoReservas.jsx";
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -127,8 +127,6 @@ const Dashboard = () => {
                 if (materiasResponse.success) {
                     setMaterias(materiasResponse.data);
                 }
-
-                // Aquí usamos fromDate y toDate
                 const allReservasResponse = await ApiService.getAllReservas(fromDate, toDate);
                 if (allReservasResponse.success) {
                     setReservas(allReservasResponse.data);
@@ -142,6 +140,9 @@ const Dashboard = () => {
                                 monto: pago.monto * 0.05
                             }));
                         });
+                    }
+                    else if (response.detail === "No se proporcionaron IDs de reservas"){
+                        setError("Actualmente no tiene reservas");
                     }
                     setPagos(pagosObj);
                 }
@@ -494,13 +495,6 @@ const Dashboard = () => {
                                     pagos={pagos}
                                 />
                             )}
-
-                            {/* Tabla de últimas reservas */}
-                            <ReservasTable
-                                reservas={reservas}
-                                pagos={pagos}
-                                activeTab={activeTab}
-                            />
 
                             {/* Nota informativa según el rol activo */}
                             <div className="alert alert-info mt-4">

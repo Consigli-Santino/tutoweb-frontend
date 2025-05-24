@@ -1,4 +1,4 @@
-// components/ReservasTable.jsx
+
 
 import React from 'react';
 

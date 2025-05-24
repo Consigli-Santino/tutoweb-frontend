@@ -49,6 +49,7 @@ const CarrerasMateriasCRUD = () => {
                             {activeTab === 'materias' && <MateriasCRUD />}
                         </>
                     )}
+
                 </div>
             </div>
         </div>
