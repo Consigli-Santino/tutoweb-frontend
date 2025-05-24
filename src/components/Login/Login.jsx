@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import utnLogo from '../../assets/UTN_logo.jpg';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from '../../context/AuthContext';
 import './LoginButton.css';
 import LoginService from "../../services/LoginService.js";
 
 const Login = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const { login, isAuthenticated, loading } = useAuth();
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -15,11 +16,19 @@ const Login = () => {
     });
     const [error, setError] = useState('');
 
+    // Detectar si viene del logout
+    const isFromLogout = searchParams.get('logout') === 'true';
+
     useEffect(() => {
-        if (!loading && isAuthenticated) {
+        if (!loading && isAuthenticated && !isFromLogout) {
             navigate('/home');
         }
-    }, [isAuthenticated, loading, navigate]);
+
+        if (isFromLogout) {
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, '', newUrl);
+        }
+    }, [isAuthenticated, loading, navigate, isFromLogout]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -51,8 +60,7 @@ const Login = () => {
         }
     };
 
-    // Show loading state while AuthContext is initializing
-    if (loading) {
+    if (loading && !isFromLogout) {
         return (
             <div className="container-fluid min-vh-100 d-flex align-items-center justify-content-center">
                 <div className="spinner-border text-primary" role="status">
@@ -79,7 +87,9 @@ const Login = () => {
                     {/* Contenido del formulario */}
                     <div className="card-body p-4">
                         <h1 className="fw-bold text-center fs-2 mb-1">Login</h1>
-                        <p className="text-center text-muted mb-4">Inicia sesión para continuar.</p>
+                        <p className="text-center text-muted mb-4">
+                            {isFromLogout ? 'Sesión cerrada correctamente. Inicia sesión nuevamente.' : 'Inicia sesión para continuar.'}
+                        </p>
 
                         <form onSubmit={handleSubmit}>
                             <div className="mb-3">

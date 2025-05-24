@@ -7,7 +7,6 @@ import Home from "./components/Home/Home.jsx";
 import FormUser from "./components/Register/FormUser.jsx";
 import Unauthorized from "./components/Unauthorized/Unauthorized.jsx";
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute.jsx';
-import Clasess from "./components/Clases/Clasess.jsx";
 import Users from "./components/Admin/Users.jsx";
 import AppLayout from './components/Layout/AppLayout.jsx';
 import FormUserByAdmin from './components/Admin/FormUserByAdmin.jsx';
@@ -65,11 +64,6 @@ function App() {
                                 <ListadoReservas path="/listReservations">
                                     <Dashboard/>
                                 </ListadoReservas>
-                            } />
-                            <Route path="/clases" element={
-                                <ProtectedRoute path="/clases">
-                                    <Clasess />
-                                </ProtectedRoute>
                             } />
                             <Route path="/disponibility" element={
                                 <ProtectedRoute path="/disponibility">
