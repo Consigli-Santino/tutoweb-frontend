@@ -102,9 +102,6 @@ const ReservasTable = ({
                                     <div className="mb-2">
                                         <strong>Sala Virtual:</strong> {reserva.sala_virtual || 'No disponible'}
                                     </div>
-                                    <div className="mb-2">
-                                        <strong>Notas:</strong> {reserva.notas || 'Sin notas'}
-                                    </div>
                                 </div>
                                 <div className="col-md-6">
                                     <h5 className="mb-3 materia-title">Detalles de Pago</h5>

@@ -1,22 +1,16 @@
 class SidebarOptionsService {
     sideBarOptions = [
         {
-            "icon": "building-fill",
-            "name": "Carreras",
-            "roles": ["superAdmin"],
-            "path": "/carriers"
-        },
-        {
-            "icon": "house-fill",
-            "name": "Dashboard",
-            "roles": ["alumno&tutor", "superAdmin",],
-            "path": "/dashboards"
-        },
-        {
             "icon": "table",
             "name": "Listado Reservas",
             "roles": ["alumno&tutor","alumno"],
             "path": "/listReservations"
+        },
+        {
+            "icon": "journal-text",
+            "name": "Calificaciones",
+            "roles": ["superAdmin"],
+            "path": "/califications"
         }
 
     ]

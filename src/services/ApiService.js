@@ -30,7 +30,9 @@ class ApiService {
             const response = await fetch(`${API_URL}${endpoint}`, config);
 
             if (!response.ok) {
-                throw new Error(`Error en la petición: ${response.status}`);
+                const errorData = await response.json();
+                throw new Error(errorData.detail || "Error en la solicitud");
+
             }
 
             const data = await response.json();
@@ -44,7 +46,46 @@ class ApiService {
     static async getUsuarios() {
         return ApiService.fetchApi('/usuarios/all');
     }
+    static getCalificacionesByDateRangeWithParams(queryString = '') {
+        let endpoint = '/calificaciones/date-range';
+        if (queryString) {
+            endpoint += `?${queryString}`;
+        }
+        return ApiService.fetchApi(endpoint);
+    }
 
+    static getCalificacionesByDateRange(fechaDesde = null, fechaHasta = null, usuarioId = null) {
+        let endpoint = '/calificaciones/date-range';
+        const params = new URLSearchParams();
+
+        if (fechaDesde) {
+            params.append('fecha_desde', fechaDesde);
+        }
+        if (fechaHasta) {
+            params.append('fecha_hasta', fechaHasta);
+        }
+        if (usuarioId) {
+            params.append('usuario_id', usuarioId);
+        }
+
+        if (params.toString()) {
+            endpoint += `?${params.toString()}`;
+        }
+
+        return ApiService.fetchApi(endpoint);
+    }
+    static getCalificacionesUltimosDias(dias = 60, usuarioId = null) {
+        const fechaHasta = new Date().toISOString().split('T')[0];
+        const fechaDesde = new Date();
+        fechaDesde.setDate(fechaDesde.getDate() - dias);
+        const fechaDesdeStr = fechaDesde.toISOString().split('T')[0];
+
+        return ApiService.getCalificacionesByDateRange(fechaDesdeStr, fechaHasta, usuarioId);
+    }
+
+    static getCalificacionesByUsuario(usuarioId, fechaDesde = null, fechaHasta = null) {
+        return ApiService.getCalificacionesByDateRange(fechaDesde, fechaHasta, usuarioId);
+    }
     static async getMateriasByTutor(usuario_id, carrera_id) {
         return ApiService.fetchApi(`/materias-carrera-usuario/usuario/${usuario_id}/carrera/${carrera_id}`);
     }

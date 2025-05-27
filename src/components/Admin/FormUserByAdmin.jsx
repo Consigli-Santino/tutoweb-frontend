@@ -4,6 +4,7 @@ import _ from 'lodash';
 import '../Login/LoginButton.css';
 import { useEntidades } from "../../context/EntidadesContext.jsx";
 import CustomSelect from '../../components/CustomInputs/CustomSelect.jsx'; // Importamos nuestro componente personalizado
+const API_URL = (import.meta.env.VITE_BACKEND_URL);
 
 const FormUserByAdmin = () => {
     const {
@@ -41,11 +42,12 @@ const FormUserByAdmin = () => {
                 throw new Error('No se encontró token de autenticación');
             }
 
-            const response = await fetch(`http://localhost:7000/usuario/${id}`, {
+            const response = await fetch(`${API_URL}/usuario/${id}`, {
                 method: 'GET',
                 headers: {
                     'accept': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token}`,
+                    'ngrok-skip-browser-warning': 'true'
                 }
             });
 
@@ -55,7 +57,6 @@ const FormUserByAdmin = () => {
 
             const data = await response.json();
             if (data.success) {
-                // Prellenar el formulario con los datos del usuario
                 setFormData({
                     nombre: data.data.nombre || '',
                     apellido: data.data.apellido || '',
@@ -63,15 +64,30 @@ const FormUserByAdmin = () => {
                     password: '',
                     confirmPassword: '',
                     foto_perfil: null,
-                    carrera_id:data.data.carreras[0]?.id?.toString() || '',
+                    carrera_id: data.data.carreras[0]?.id?.toString() || '',
                     rol_id: data.data.rol?.id?.toString() || ''
                 });
                 if (data.data.foto_perfil) {
                     const imageUrl = data.data.foto_perfil.startsWith('http')
                         ? data.data.foto_perfil
-                        : `http://localhost:7000${data.data.foto_perfil}`;
+                        : `${API_URL}${data.data.foto_perfil}`;
+                    console.log('Image URL:', imageUrl);
+                    try {
+                        const imageResponse = await fetch(imageUrl, {
+                            headers: {
+                                'ngrok-skip-browser-warning': 'true'
+                            }
+                        });
 
-                    setImagePreview(imageUrl);
+                        if (imageResponse.ok) {
+                            const blob = await imageResponse.blob();
+                            const objectURL = URL.createObjectURL(blob);
+                            setImagePreview(objectURL);
+                        }
+                    } catch (error) {
+                        console.error('Error loading image:', error);
+                        setImagePreview(imageUrl);
+                    }
                 }
             } else {
                 throw new Error(data.message || 'Error al obtener usuario');

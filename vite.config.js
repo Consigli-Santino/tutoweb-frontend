@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
-    allowedHosts: ['little-teams-dress.loca.lt'],
+    allowedHosts: ['warm-poems-invite.loca.lt'],
     cors: true,
     proxy: {
       '/api': {

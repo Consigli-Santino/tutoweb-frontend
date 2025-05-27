@@ -4,32 +4,92 @@ import './TutoresCarrusel.css';
 import { useEntidades } from "../../../context/EntidadesContext.jsx";
 import useAuth from "../../../context/AuthContext.jsx";
 import ApiService from '../../../services/ApiService';
+import CustomSelect from '../../../components/CustomInputs/CustomSelect.jsx';
 
 const TutoresCarrusel = () => {
     const { user } = useAuth();
-    const { getTutoresByCarreraWithMaterias, getServiciosByTutor } = useEntidades();
+    const { getTutoresByCarreraWithMaterias, getMateriasByCarrera } = useEntidades();
     const [tutores, setTutores] = useState([]);
+    const [filteredTutores, setFilteredTutores] = useState([]);
     const [tutoresServicios, setTutoresServicios] = useState({});
+    const [materiasDisponibles, setMateriasDisponibles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [previousIndex, setPreviousIndex] = useState(null);
     const [isTransitioning, setIsTransitioning] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [serviceFilter, setServiceFilter] = useState('');
+    const [showFilter, setShowFilter] = useState(false);
 
     const timerRef = useRef(null);
+    const carreraId = user?.carreras?.[0]?.id;
+
+    const filterTutoresByName = (tutoresArray, searchValue) => {
+        if (!searchValue.trim()) {
+            return tutoresArray;
+        }
+
+        const searchTermLower = searchValue.toLowerCase();
+        return tutoresArray.filter(tutor => {
+            const nombreCompleto = `${tutor.nombre} ${tutor.apellido}`.toLowerCase();
+            return nombreCompleto.includes(searchTermLower);
+        });
+    };
+
+    const filterTutoresByService = (tutoresArray, serviceValue) => {
+        if (!serviceValue.trim()) {
+            return tutoresArray;
+        }
+
+        return tutoresArray.filter(tutor => {
+            const servicios = tutoresServicios[tutor.email] || [];
+            return servicios.some(servicio =>
+                servicio.materia?.id?.toString() === serviceValue
+            );
+        });
+    };
+
+    const applyFilters = (tutoresArray) => {
+        let filtered = tutoresArray;
+
+        if (searchTerm.trim()) {
+            filtered = filterTutoresByName(filtered, searchTerm);
+        }
+
+        if (serviceFilter.trim()) {
+            filtered = filterTutoresByService(filtered, serviceFilter);
+        }
+
+        return filtered;
+    };
+
+    useEffect(() => {
+        const filtered = applyFilters(tutores);
+        setFilteredTutores(filtered);
+
+        if (filtered.length === 0) {
+            setCurrentIndex(0);
+        } else if (currentIndex >= filtered.length) {
+            setCurrentIndex(0);
+        }
+
+        setIsTransitioning(false);
+        setPreviousIndex(null);
+    }, [tutores, searchTerm, serviceFilter, currentIndex, tutoresServicios]);
+
     const handlePrevTutor = () => {
-        if (isTransitioning) return;
+        if (isTransitioning || filteredTutores.length <= 1) return;
         setPreviousIndex(currentIndex);
-        const prevIndex = currentIndex === 0 ? tutores.length - 1 : currentIndex - 1;
+        const prevIndex = currentIndex === 0 ? filteredTutores.length - 1 : currentIndex - 1;
         setIsTransitioning(true);
         setCurrentIndex(prevIndex);
     };
 
-    // Manejador para cambiar manualmente al siguiente tutor
     const handleNextTutor = () => {
-        if (isTransitioning) return;
+        if (isTransitioning || filteredTutores.length <= 1) return;
         setPreviousIndex(currentIndex);
-        const nextIndex = currentIndex === tutores.length - 1 ? 0 : currentIndex + 1;
+        const nextIndex = currentIndex === filteredTutores.length - 1 ? 0 : currentIndex + 1;
         setIsTransitioning(true);
         setCurrentIndex(nextIndex);
     };
@@ -37,11 +97,17 @@ const TutoresCarrusel = () => {
     useEffect(() => {
         const fetchTutores = async () => {
             try {
-                const data = await getTutoresByCarreraWithMaterias(user.carreras[0]?.id);
+                if (!carreraId) {
+                    setError('No se encontró información de carrera del usuario');
+                    setLoading(false);
+                    return;
+                }
+
+                const data = await getTutoresByCarreraWithMaterias(carreraId);
                 if (data.success) {
                     setTutores(data.data);
+                    setFilteredTutores(data.data);
 
-                    // Cargar servicios para cada tutor
                     const serviciosPorTutor = {};
                     for (const tutor of data.data) {
                         const serviciosResponse = await ApiService.fetchApi(`/servicios/tutor/${tutor.email}`);
@@ -53,6 +119,13 @@ const TutoresCarrusel = () => {
                 } else {
                     setError(data.message || 'Error al cargar los tutores');
                 }
+
+                const materiasResponse = await getMateriasByCarrera(carreraId);
+                if (materiasResponse && materiasResponse.success) {
+                    setMateriasDisponibles(materiasResponse.data);
+                } else {
+                    console.warn('No se pudieron cargar las materias para el filtro');
+                }
             } catch (err) {
                 setError('Error al conectar con el servidor');
                 console.error(err);
@@ -62,12 +135,10 @@ const TutoresCarrusel = () => {
         };
 
         fetchTutores();
-    }, [getTutoresByCarreraWithMaterias, user.carreras]);
+    }, [getTutoresByCarreraWithMaterias, getMateriasByCarrera, carreraId]);
 
-    // Efecto para detectar el final de la transición
     useEffect(() => {
         if (isTransitioning) {
-            // Finalizar la transición después de 800ms
             const timer = setTimeout(() => {
                 setIsTransitioning(false);
                 setPreviousIndex(null);
@@ -77,38 +148,28 @@ const TutoresCarrusel = () => {
         }
     }, [isTransitioning]);
 
-    // Efecto para rotación automática con transición suave
     useEffect(() => {
-        // Solo configurar el intervalo si hay más de un tutor y no estamos en transición
-        if (tutores.length <= 1) return;
+        if (filteredTutores.length <= 1 || searchTerm.trim() || serviceFilter.trim()) return;
 
-        // Limpiar cualquier temporizador previo
         if (timerRef.current) {
             clearInterval(timerRef.current);
         }
 
-        // Intervalo para cambiar tutores (7 segundos)
         timerRef.current = setInterval(() => {
             if (!isTransitioning) {
-                // Guardar el índice actual como el anterior
                 setPreviousIndex(currentIndex);
-
-                // Determinar índice siguiente
-                const nextIndex = currentIndex === tutores.length - 1 ? 0 : currentIndex + 1;
-
-                // Iniciar transición
+                const nextIndex = currentIndex === filteredTutores.length - 1 ? 0 : currentIndex + 1;
                 setIsTransitioning(true);
                 setCurrentIndex(nextIndex);
             }
         }, 7000);
 
-        // Limpiar intervalo al desmontar
         return () => {
             if (timerRef.current) {
                 clearInterval(timerRef.current);
             }
         };
-    }, [tutores.length, currentIndex, isTransitioning]);
+    }, [filteredTutores.length, currentIndex, isTransitioning, searchTerm, serviceFilter]);
 
     const getImageUrl = (fotoPath) => {
         if (!fotoPath) return 'https://via.placeholder.com/400';
@@ -146,6 +207,15 @@ const TutoresCarrusel = () => {
         );
     };
 
+    const resetSearch = () => {
+        setSearchTerm('');
+        setServiceFilter('');
+    };
+
+    const hasActiveFilters = () => {
+        return searchTerm.trim() || serviceFilter.trim();
+    };
+
     if (loading) {
         return (
             <div className="tutores-carrusel-compact my-2 text-center">
@@ -171,29 +241,169 @@ const TutoresCarrusel = () => {
         return null;
     }
 
-    // Mostrar solo el tutor actual
-    const tutor = tutores[currentIndex];
-    // Obtener los servicios del tutor actual usando su email como clave
+    if (filteredTutores.length === 0 && hasActiveFilters()) {
+        return (
+            <div className="tutores-destacados-section h-100">
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                    <h6 className="fw-bold mb-0">Tutores Destacados</h6>
+                    <button
+                        className="btn btn-sm btn-outline-secondary"
+                        onClick={() => setShowFilter(!showFilter)}
+                        title="Buscar tutor"
+                    >
+                        <i className="bi bi-funnel"></i>
+                    </button>
+                </div>
+
+                {showFilter && (
+                    <div className="mb-3">
+                        <div className="row g-2">
+                            <div className="col-12">
+                                <div className="input-group input-group-sm mb-2">
+                                    <span className="input-group-text bg-white border-0">
+                                        <i className="bi bi-search text-muted"></i>
+                                    </span>
+                                    <input
+                                        type="text"
+                                        className="form-control border-0 py-2"
+                                        placeholder="Buscar por nombre..."
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <div className="col-12">
+                                <CustomSelect
+                                    value={serviceFilter}
+                                    onChange={(e) => setServiceFilter(e.target.value)}
+                                    options={materiasDisponibles}
+                                    placeholder="Buscar por materia..."
+                                    className="form-select form-select-sm"
+                                    variant="light"
+                                />
+                            </div>
+                            {hasActiveFilters() && (
+                                <div className="col-12">
+                                    <button
+                                        className="btn btn-sm btn-outline-secondary w-100"
+                                        onClick={resetSearch}
+                                        title="Limpiar filtros"
+                                    >
+                                        <i className="bi bi-x-circle me-1"></i>
+                                        Limpiar filtros
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                <div className="tutores-card card shadow-sm border-0 rounded-4 overflow-hidden">
+                    <div className="card-body p-3 text-center">
+                        <i className="bi bi-search fs-1 text-muted mb-3"></i>
+                        <p className="text-muted mb-2">
+                            No se encontraron tutores con los filtros aplicados
+                        </p>
+                        {searchTerm && (
+                            <p className="small text-muted">Nombre: "{searchTerm}"</p>
+                        )}
+                        {serviceFilter && (
+                            <p className="small text-muted">
+                                Materia: "{materiasDisponibles.find(m => m.id.toString() === serviceFilter)?.nombre || serviceFilter}"
+                            </p>
+                        )}
+                        <button
+                            className="btn btn-sm btn-outline-primary"
+                            onClick={resetSearch}
+                        >
+                            <i className="bi bi-arrow-counterclockwise me-1"></i>
+                            Mostrar todos los tutores
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    const tutor = filteredTutores[currentIndex];
     const servicios = tutoresServicios[tutor.email] || [];
 
     return (
         <div className="tutores-destacados-section h-100">
-            <h6 className="fw-bold text-center mb-3">Tutores Destacados</h6>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+                <h6 className="fw-bold mb-0">
+                    Tutores Destacados
+                    {hasActiveFilters() && (
+                        <span className="badge bg-primary ms-2 small">
+                            Filtrado
+                            {searchTerm && ` - ${searchTerm}`}
+                            {serviceFilter && ` - ${materiasDisponibles.find(m => m.id.toString() === serviceFilter)?.nombre || 'Materia'}`}
+                        </span>
+                    )}
+                </h6>
+                <button
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() => setShowFilter(!showFilter)}
+                    title="Filtros"
+                >
+                    <i className="bi bi-funnel"></i>
+                </button>
+            </div>
+
+            {showFilter && (
+                <div className="mb-3">
+                    <div className="row g-2">
+                        <div className="col-12">
+                            <div className="input-group input-group-sm mb-2">
+                                <span className="input-group-text bg-white border-0">
+                                    <i className="bi bi-search text-muted"></i>
+                                </span>
+                                <input
+                                    type="text"
+                                    className="form-control border-0 py-2"
+                                    placeholder="Buscar por nombre..."
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                        <div className="col-12">
+                            <CustomSelect
+                                value={serviceFilter}
+                                onChange={(e) => setServiceFilter(e.target.value)}
+                                options={materiasDisponibles}
+                                placeholder="Buscar por materia..."
+                                className="form-select form-select-sm"
+                                variant="light"
+                            />
+                        </div>
+                        {hasActiveFilters() && (
+                            <div className="col-12">
+                                <button
+                                    className="btn btn-sm btn-outline-secondary w-100"
+                                    onClick={resetSearch}
+                                    title="Limpiar filtros"
+                                >
+                                    <i className="bi bi-x-circle me-1"></i>
+                                    Limpiar filtros
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
 
             <div className="tutores-card card shadow-sm border-0 rounded-4 overflow-hidden">
-                {/* Contenedor de imagen con transición suave */}
                 <div className="tutor-slide-container position-relative">
                     <div className="tutor-images-wrapper">
-                        {/* Mostrar la imagen anterior durante la transición */}
                         {isTransitioning && previousIndex !== null && (
                             <img
-                                src={getImageUrl(tutores[previousIndex].foto_perfil)}
+                                src={getImageUrl(filteredTutores[previousIndex].foto_perfil)}
                                 className="tutor-image tutor-image-outgoing"
-                                alt={`${tutores[previousIndex].nombre} ${tutores[previousIndex].apellido}`}
+                                alt={`${filteredTutores[previousIndex].nombre} ${filteredTutores[previousIndex].apellido}`}
                             />
                         )}
 
-                        {/* Mostrar la imagen actual */}
                         <img
                             src={getImageUrl(tutor.foto_perfil)}
                             className="tutor-image tutor-image-incoming"
@@ -201,35 +411,36 @@ const TutoresCarrusel = () => {
                         />
                     </div>
 
-                    {/* Overlay con nombre */}
                     <div className="nombre-overlay d-flex align-items-end">
                         <h6 className="text-white text-center w-100 mb-2">
                             {tutor.nombre} {tutor.apellido}
                         </h6>
                     </div>
 
-                    {/* Botones de navegación lateral */}
-                    <button
-                        onClick={handlePrevTutor}
-                        className="carousel-control-prev"
-                        type="button"
-                        aria-label="Anterior"
-                        disabled={isTransitioning}
-                    >
-                        <span className="carousel-control-prev-icon" aria-hidden="true"></span>
-                    </button>
-                    <button
-                        onClick={handleNextTutor}
-                        className="carousel-control-next"
-                        type="button"
-                        aria-label="Siguiente"
-                        disabled={isTransitioning}
-                    >
-                        <span className="carousel-control-next-icon" aria-hidden="true"></span>
-                    </button>
+                    {filteredTutores.length > 1 && (
+                        <>
+                            <button
+                                onClick={handlePrevTutor}
+                                className="carousel-control-prev"
+                                type="button"
+                                aria-label="Anterior"
+                                disabled={isTransitioning}
+                            >
+                                <span className="carousel-control-prev-icon" aria-hidden="true"></span>
+                            </button>
+                            <button
+                                onClick={handleNextTutor}
+                                className="carousel-control-next"
+                                type="button"
+                                aria-label="Siguiente"
+                                disabled={isTransitioning}
+                            >
+                                <span className="carousel-control-next-icon" aria-hidden="true"></span>
+                            </button>
+                        </>
+                    )}
                 </div>
 
-                {/* Información adicional bajo la imagen */}
                 <div className="card-body p-3">
                     <div className="mb-2">
                         {renderStars(tutor.puntuacion_promedio)}
@@ -273,25 +484,26 @@ const TutoresCarrusel = () => {
                 </div>
             </div>
 
-            {/* Indicadores de carrusel */}
-            <div className="d-flex justify-content-center mt-3">
-                {tutores.map((_, index) => (
-                    <button
-                        key={index}
-                        type="button"
-                        className={`carousel-indicator-dot ${index === currentIndex ? 'active' : ''}`}
-                        onClick={() => {
-                            if (!isTransitioning) {
-                                setPreviousIndex(currentIndex);
-                                setIsTransitioning(true);
-                                setCurrentIndex(index);
-                            }
-                        }}
-                        disabled={isTransitioning}
-                        aria-label={`Tutor ${index + 1}`}
-                    ></button>
-                ))}
-            </div>
+            {filteredTutores.length > 1 && (
+                <div className="d-flex justify-content-center mt-3">
+                    {filteredTutores.map((_, index) => (
+                        <button
+                            key={index}
+                            type="button"
+                            className={`carousel-indicator-dot ${index === currentIndex ? 'active' : ''}`}
+                            onClick={() => {
+                                if (!isTransitioning) {
+                                    setPreviousIndex(currentIndex);
+                                    setIsTransitioning(true);
+                                    setCurrentIndex(index);
+                                }
+                            }}
+                            disabled={isTransitioning}
+                            aria-label={`Tutor ${index + 1}`}
+                        ></button>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };
