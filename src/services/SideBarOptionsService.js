@@ -11,23 +11,27 @@ class SidebarOptionsService {
             "name": "Calificaciones",
             "roles": ["superAdmin"],
             "path": "/califications"
+        },
+        {
+            "icon": "bell-fill",
+            "name": "Notificaciones",
+            "roles": ["superAdmin"],
+            "path": "/Notifications"
         }
+
 
     ]
     loadSideBarOptionsBasedOnRole(roles) {
-        // Si roles es ya un array, usarlo directamente
         if (Array.isArray(roles)) {
             return this.sideBarOptions.filter(option => {
                 return roles.some(role => option.roles.includes(role));
             });
         }
-        // Si roles es un string único
         else if (typeof roles === 'string') {
             return this.sideBarOptions.filter(option => {
                 return option.roles.includes(roles);
             });
         }
-        // Si por alguna razón roles es undefined o null
         return [];
     }
 

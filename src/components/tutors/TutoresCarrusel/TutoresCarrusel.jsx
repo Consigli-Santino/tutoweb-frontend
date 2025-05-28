@@ -21,21 +21,10 @@ const TutoresCarrusel = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [serviceFilter, setServiceFilter] = useState('');
     const [showFilter, setShowFilter] = useState(false);
-
+    const [imageUrls, setImageUrls] = useState({});
+    const [loadingImages, setLoadingImages] = useState({});
     const timerRef = useRef(null);
     const carreraId = user?.carreras?.[0]?.id;
-
-    const filterTutoresByName = (tutoresArray, searchValue) => {
-        if (!searchValue.trim()) {
-            return tutoresArray;
-        }
-
-        const searchTermLower = searchValue.toLowerCase();
-        return tutoresArray.filter(tutor => {
-            const nombreCompleto = `${tutor.nombre} ${tutor.apellido}`.toLowerCase();
-            return nombreCompleto.includes(searchTermLower);
-        });
-    };
 
     const filterTutoresByService = (tutoresArray, serviceValue) => {
         if (!serviceValue.trim()) {
@@ -52,10 +41,6 @@ const TutoresCarrusel = () => {
 
     const applyFilters = (tutoresArray) => {
         let filtered = tutoresArray;
-
-        if (searchTerm.trim()) {
-            filtered = filterTutoresByName(filtered, searchTerm);
-        }
 
         if (serviceFilter.trim()) {
             filtered = filterTutoresByService(filtered, serviceFilter);
@@ -171,13 +156,61 @@ const TutoresCarrusel = () => {
         };
     }, [filteredTutores.length, currentIndex, isTransitioning, searchTerm, serviceFilter]);
 
+    const loadImageAsBlob = async (fotoPath) => {
+        if (!fotoPath) return 'https://via.placeholder.com/400';
+        if (fotoPath.startsWith('http')) return fotoPath;
+        const baseUrl = import.meta.env.VITE_BACKEND_URL
+        const fullUrl = `${baseUrl}${fotoPath}`;
+        if (imageUrls[fullUrl]) {
+            return imageUrls[fullUrl];
+        }
+        if (loadingImages[fullUrl]) {
+            return 'https://via.placeholder.com/400';
+        }
+
+        try {
+            setLoadingImages(prev => ({...prev, [fullUrl]: true}));
+            const response = await fetch(fullUrl, {
+                headers: {
+                    'ngrok-skip-browser-warning': 'true'
+                }
+            });
+            if (!response.ok) throw new Error('Failed to load image');
+
+            const blob = await response.blob();
+            const blobUrl = URL.createObjectURL(blob);
+
+            setImageUrls(prev => ({...prev, [fullUrl]: blobUrl}));
+            setLoadingImages(prev => ({...prev, [fullUrl]: false}));
+
+            return blobUrl;
+        } catch (error) {
+            console.error('Error loading image:', error);
+            setLoadingImages(prev => ({...prev, [fullUrl]: false}));
+            return 'https://via.placeholder.com/400';
+        }
+    };
     const getImageUrl = (fotoPath) => {
         if (!fotoPath) return 'https://via.placeholder.com/400';
-
-        return fotoPath.startsWith('http')
-            ? fotoPath
-            : `http://192.168.0.38:7000${fotoPath}`;
+        if (fotoPath.startsWith('http')) return fotoPath;
+        const baseUrl = import.meta.env.VITE_BACKEND_URL
+        const fullUrl = `${baseUrl}${fotoPath}`;
+        return imageUrls[fullUrl] || 'https://via.placeholder.com/400';
     };
+
+    useEffect(() => {
+        const preloadImages = async () => {
+            for (const tutor of filteredTutores) {
+                if (tutor.foto_perfil) {
+                    await loadImageAsBlob(tutor.foto_perfil);
+                }
+            }
+        };
+
+        if (filteredTutores.length > 0) {
+            preloadImages();
+        }
+    }, [filteredTutores]);
 
     const renderStars = (puntuacion) => {
         const totalStars = 5;
@@ -258,20 +291,6 @@ const TutoresCarrusel = () => {
                 {showFilter && (
                     <div className="mb-3">
                         <div className="row g-2">
-                            <div className="col-12">
-                                <div className="input-group input-group-sm mb-2">
-                                    <span className="input-group-text bg-white border-0">
-                                        <i className="bi bi-search text-muted"></i>
-                                    </span>
-                                    <input
-                                        type="text"
-                                        className="form-control border-0 py-2"
-                                        placeholder="Buscar por nombre..."
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                    />
-                                </div>
-                            </div>
                             <div className="col-12">
                                 <CustomSelect
                                     value={serviceFilter}
