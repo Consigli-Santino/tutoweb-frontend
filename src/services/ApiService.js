@@ -46,6 +46,7 @@ class ApiService {
     static async getUsuarios() {
         return ApiService.fetchApi('/usuarios/all');
     }
+
     static getCalificacionesByDateRangeWithParams(queryString = '') {
         let endpoint = '/calificaciones/date-range';
         if (queryString) {
@@ -74,6 +75,7 @@ class ApiService {
 
         return ApiService.fetchApi(endpoint);
     }
+
     static getCalificacionesUltimosDias(dias = 60, usuarioId = null) {
         const fechaHasta = new Date().toISOString().split('T')[0];
         const fechaDesde = new Date();
@@ -86,6 +88,7 @@ class ApiService {
     static getCalificacionesByUsuario(usuarioId, fechaDesde = null, fechaHasta = null) {
         return ApiService.getCalificacionesByDateRange(fechaDesde, fechaHasta, usuarioId);
     }
+
     static async getMateriasByTutor(usuario_id, carrera_id) {
         return ApiService.fetchApi(`/materias-carrera-usuario/usuario/${usuario_id}/carrera/${carrera_id}`);
     }
@@ -93,15 +96,19 @@ class ApiService {
     static async getCarreras() {
         return ApiService.fetchApi('/carreras/all');
     }
+
     static getAllUsuarios() {
         return ApiService.fetchApi('/usuarios/all');
     }
+
     static getTutores() {
         return ApiService.fetchApi('/usuarios/tutores');
     }
+
     static getAllMaterias() {
         return ApiService.fetchApi('/materias/all');
     }
+
     static getAllReservas(fechaDesde = null, fechaHasta = null) {
         let endpoint = '/reservas/admin/all';
         if (fechaDesde && fechaHasta) {
@@ -109,6 +116,7 @@ class ApiService {
         }
         return ApiService.fetchApi(endpoint);
     }
+
     static getCalificacionesByEstudiante() {
         return ApiService.fetchApi('/calificaciones/estudiante');
     }
@@ -192,9 +200,11 @@ class ApiService {
     static getReservasByEstudiante() {
         return ApiService.fetchApi('/reservas/estudiante');
     }
+
     static fetchPagoByReserva(reservaId) {
         return ApiService.fetchApi(`/pago/reserva/${reservaId}`);
     }
+
     static createPago(pagoData) {
         return ApiService.fetchApi('/pago/create', 'POST', pagoData);
     }
@@ -203,8 +213,7 @@ class ApiService {
         return ApiService.fetchApi(`/pago/${pagoId}/estado/${estado}`, 'PUT');
     }
 
-    static fetchReservasDetalladasByEstudiante(fechaDesde = null, fechaHasta = null)
-    {
+    static fetchReservasDetalladasByEstudiante(fechaDesde = null, fechaHasta = null) {
         let endpoint = '/reservas/estudiante/detalladas';
         if (fechaDesde && fechaHasta) {
             endpoint += `?fecha_desde=${fechaDesde}&fecha_hasta=${fechaHasta}`;
@@ -212,6 +221,7 @@ class ApiService {
 
         return ApiService.fetchApi(endpoint);
     }
+
     static getReservasByTutor() {
         return ApiService.fetchApi('/reservas/tutor');
     }
@@ -264,6 +274,7 @@ class ApiService {
     static eliminarDisponibilidad(id) {
         return ApiService.fetchApi(`/disponibilidad/${id}`, 'DELETE');
     }
+
     static getCalificacionByReserva(reservaId) {
         return ApiService.fetchApi(`/calificacion/reserva/${reservaId}`);
     }
@@ -291,6 +302,7 @@ class ApiService {
     static async fetchPagosByReservas(idsReservas) {
         return ApiService.fetchApi('/pagos/reservas', 'POST', { reserva_ids: idsReservas });
     }
+
     static createCarrera(carrera) {
         return ApiService.fetchApi('/carrera/create', 'POST', carrera);
     }
@@ -321,6 +333,63 @@ class ApiService {
 
     static deleteMateria(id) {
         return ApiService.fetchApi(`/materia/${id}`, 'DELETE');
+    }
+
+    // === NOTIFICACIONES ===
+
+    static async getNotificacionesByUser(soloNoLeidas = false) {
+        const params = soloNoLeidas ? '?solo_no_leidas=true' : '';
+        return ApiService.fetchApi(`/notificaciones${params}`);
+    }
+
+    static async getAllNotificaciones(fechaDesde = null, fechaHasta = null) {
+        let endpoint = '/notificaciones/all';
+        const params = new URLSearchParams();
+
+        if (fechaDesde) params.append('fecha_desde', fechaDesde);
+        if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+
+        const queryString = params.toString();
+        if (queryString) {
+            endpoint += `?${queryString}`;
+        }
+
+        return ApiService.fetchApi(endpoint);
+    }
+
+    static async getNotificacionesByTipo(tipo) {
+        return ApiService.fetchApi(`/notificaciones/tipo/${tipo}`);
+    }
+
+    static async getEstadisticasNotificaciones(fechaDesde = null, fechaHasta = null) {
+        let endpoint = '/notificaciones/estadisticas';
+        const params = new URLSearchParams();
+
+        if (fechaDesde) params.append('fecha_desde', fechaDesde);
+        if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+
+        const queryString = params.toString();
+        if (queryString) {
+            endpoint += `?${queryString}`;
+        }
+
+        return ApiService.fetchApi(endpoint);
+    }
+
+    static async createNotificacion(notificacionData) {
+        return ApiService.fetchApi('/notificaciones/create', 'POST', notificacionData);
+    }
+
+    static async markNotificacionAsRead(notificacionId) {
+        return ApiService.fetchApi(`/notificaciones/${notificacionId}/leer`, 'PUT');
+    }
+
+    static async markAllNotificacionesAsRead() {
+        return ApiService.fetchApi('/notificaciones/leer-todas', 'PUT');
+    }
+
+    static async deleteNotificacion(notificacionId) {
+        return ApiService.fetchApi(`/notificaciones/${notificacionId}`, 'DELETE');
     }
 }
 

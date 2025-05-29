@@ -15,10 +15,9 @@ class SidebarOptionsService {
         {
             "icon": "bell-fill",
             "name": "Notificaciones",
-            "roles": ["superAdmin"],
+            "roles": ["superAdmin","alumno&tutor"],
             "path": "/Notifications"
         }
-
 
     ]
     loadSideBarOptionsBasedOnRole(roles) {

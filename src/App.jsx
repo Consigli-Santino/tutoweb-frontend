@@ -22,6 +22,7 @@ import Dashboard from "./components/Dashboard/Dashboard.jsx";
 import ListadoReservas from "./components/AlumnosTutores/ListadoReservas.jsx";
 import CarrerasMateriasCRUD from "./components/Carreras/CarrerasMateriasCRUD.jsx";
 import CalificacionesListado from "./components/Admin/Califications/CalificacionesListado.jsx";
+import NotificacionesListado from "./components/Admin/Notifications/NotificacionesListado.jsx";
 
 function App() {
     return (
@@ -49,6 +50,11 @@ function App() {
                             <Route path="/califications" element={
                                 <ProtectedRoute path="/califications">
                                     <CalificacionesListado/>
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/notifications" element={
+                                <ProtectedRoute path="/Notifications">
+                                    <NotificacionesListado/>
                                 </ProtectedRoute>
                             } />
                             <Route path="/subjects" element={
