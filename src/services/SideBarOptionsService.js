@@ -13,6 +13,12 @@ class SidebarOptionsService {
             "path": "/califications"
         },
         {
+            "icon": "mortarboard",
+            "name": "Materias y Carreras",
+            "roles": ["superAdmin"],
+            "path": "/matcarr"
+        },
+        {
             "icon": "bell-fill",
             "name": "Notificaciones",
             "roles": ["superAdmin","alumno&tutor"],

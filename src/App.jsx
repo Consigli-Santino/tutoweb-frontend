@@ -23,6 +23,7 @@ import ListadoReservas from "./components/AlumnosTutores/ListadoReservas.jsx";
 import CarrerasMateriasCRUD from "./components/Carreras/CarrerasMateriasCRUD.jsx";
 import CalificacionesListado from "./components/Admin/Califications/CalificacionesListado.jsx";
 import NotificacionesListado from "./components/Admin/Notifications/NotificacionesListado.jsx";
+import AyudaPreguntasFrecuentes from "./components/AyudaPreguntasFrecuentes/AyudaPreguntasFrecuentes.jsx";
 
 function App() {
     return (
@@ -47,6 +48,12 @@ function App() {
                                     <Home />
                                 </ProtectedRoute>
                             } />
+                            <Route path="/faq" element={
+                                <ProtectedRoute path="/faq">
+                                    <AyudaPreguntasFrecuentes />
+                                </ProtectedRoute>
+                            } />
+
                             <Route path="/califications" element={
                                 <ProtectedRoute path="/califications">
                                     <CalificacionesListado/>

@@ -46,10 +46,8 @@ const NotificacionesListado = () => {
             let response;
 
             if (isAdmin) {
-                // Los admins pueden ver todas las notificaciones
                 response = await ApiService.getAllNotificaciones(fechaDesde, fechaHasta);
             } else {
-                // Los usuarios normales solo ven sus propias notificaciones
                 response = await ApiService.getNotificacionesByUser();
             }
 

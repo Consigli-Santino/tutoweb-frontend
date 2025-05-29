@@ -25,12 +25,6 @@ class HomeBarOptionsService {
             "path": "/disponibility"
         },
         {
-            "icon": "grid",
-            "name": "Estadisticas",
-            "roles": [ "alumno&tutor", "superAdmin","alumno"],
-            "path": "/dashboard"
-        },
-        {
             "icon": "bookmark",
             "name": "Mis Reservas",
             "roles": ["alumno", "alumno&tutor"],
@@ -49,11 +43,18 @@ class HomeBarOptionsService {
             "path": "/tutor/servicios"
         },
         {
-            "icon": "mortarboard",
-            "name": "Materias y Carreras",
-            "roles": ["superAdmin"],
-            "path": "/matcarr"
-        }
+            "icon": "grid",
+            "name": "Estadisticas",
+            "roles": [ "alumno&tutor", "superAdmin","alumno"],
+            "path": "/dashboard"
+        },
+        {
+            "icon": "question-circle",
+            "name": "Ayuda",
+            "roles": ["alumno", "alumno&tutor", "superAdmin", "guardia"],
+            "path": "/faq"
+        },
+
     ]
 
     loadHomeBarOptionsBasedOnRole(roles) {
