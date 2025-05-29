@@ -27,14 +27,14 @@ const TutoresCarrusel = () => {
     const carreraId = user?.carreras?.[0]?.id;
 
     const filterTutoresByService = (tutoresArray, serviceValue) => {
-        if (!serviceValue.trim()) {
+        if (!serviceValue || !serviceValue.trim()) {
             return tutoresArray;
         }
 
         return tutoresArray.filter(tutor => {
             const servicios = tutoresServicios[tutor.email] || [];
             return servicios.some(servicio =>
-                servicio.materia?.id?.toString() === serviceValue
+                servicio.materia?.id?.toString() === serviceValue.trim()
             );
         });
     };
@@ -42,7 +42,16 @@ const TutoresCarrusel = () => {
     const applyFilters = (tutoresArray) => {
         let filtered = tutoresArray;
 
-        if (serviceFilter.trim()) {
+        // Filtrar por nombre
+        if (searchTerm && searchTerm.trim()) {
+            const searchLower = searchTerm.toLowerCase();
+            filtered = filtered.filter(tutor =>
+                tutor.nombre.toLowerCase().includes(searchLower) ||
+                tutor.apellido.toLowerCase().includes(searchLower) ||
+                tutor.email.toLowerCase().includes(searchLower)
+            );
+        }
+        if (serviceFilter && serviceFilter.trim()) {
             filtered = filterTutoresByService(filtered, serviceFilter);
         }
 
@@ -53,6 +62,7 @@ const TutoresCarrusel = () => {
         const filtered = applyFilters(tutores);
         setFilteredTutores(filtered);
 
+        // Ajustar currentIndex si es necesario
         if (filtered.length === 0) {
             setCurrentIndex(0);
         } else if (currentIndex >= filtered.length) {
@@ -61,7 +71,7 @@ const TutoresCarrusel = () => {
 
         setIsTransitioning(false);
         setPreviousIndex(null);
-    }, [tutores, searchTerm, serviceFilter, currentIndex, tutoresServicios]);
+    }, [tutores, searchTerm, serviceFilter, tutoresServicios]);
 
     const handlePrevTutor = () => {
         if (isTransitioning || filteredTutores.length <= 1) return;
@@ -190,6 +200,7 @@ const TutoresCarrusel = () => {
             return 'https://via.placeholder.com/400';
         }
     };
+
     const getImageUrl = (fotoPath) => {
         if (!fotoPath) return 'https://via.placeholder.com/400';
         if (fotoPath.startsWith('http')) return fotoPath;
@@ -241,8 +252,8 @@ const TutoresCarrusel = () => {
     };
 
     const resetSearch = () => {
-        setSearchTerm('');
-        setServiceFilter('');
+        setServiceFilter("");
+        setSearchTerm("");
     };
 
     const hasActiveFilters = () => {
@@ -288,34 +299,44 @@ const TutoresCarrusel = () => {
                     </button>
                 </div>
 
-                {showFilter && (
-                    <div className="mb-3">
-                        <div className="row g-2">
-                            <div className="col-12">
-                                <CustomSelect
-                                    value={serviceFilter}
-                                    onChange={(e) => setServiceFilter(e.target.value)}
-                                    options={materiasDisponibles}
-                                    placeholder="Buscar por materia..."
-                                    className="form-select form-select-sm"
-                                    variant="light"
-                                />
-                            </div>
-                            {hasActiveFilters() && (
-                                <div className="col-12">
-                                    <button
-                                        className="btn btn-sm btn-outline-secondary w-100"
-                                        onClick={resetSearch}
-                                        title="Limpiar filtros"
-                                    >
-                                        <i className="bi bi-x-circle me-1"></i>
-                                        Limpiar filtros
-                                    </button>
-                                </div>
-                            )}
+                <div className="mb-3">
+                    <div className="row g-2">
+                        <div className="input-group">
+                        <span className="input-group-text bg-white border-0">
+                            <i className="bi bi-search text-muted"></i>
+                        </span>
+                            <input
+                                type="text"
+                                className="form-control form-control-sm border-0 py-2"
+                                placeholder="Buscar por nombre"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
                         </div>
+                        <div className="col-12">
+                            <CustomSelect
+                                value={serviceFilter}
+                                onChange={(e) => setServiceFilter(e.target.value)}
+                                options={materiasDisponibles}
+                                placeholder="Buscar por materia..."
+                                className="form-select form-select-sm"
+                                variant="light"
+                            />
+                        </div>
+                        {hasActiveFilters() && (
+                            <div className="col-12">
+                                <button
+                                    className="btn btn-sm btn-outline-secondary w-100"
+                                    onClick={resetSearch}
+                                    title="Limpiar filtros"
+                                >
+                                    <i className="bi bi-x-circle me-1"></i>
+                                    Limpiar filtros
+                                </button>
+                            </div>
+                        )}
                     </div>
-                )}
+                </div>
 
                 <div className="tutores-card card shadow-sm border-0 rounded-4 overflow-hidden">
                     <div className="card-body p-3 text-center">
@@ -344,7 +365,18 @@ const TutoresCarrusel = () => {
         );
     }
 
+    // CORRECCIÓN: Agregar validación para evitar el error
+    if (filteredTutores.length === 0 || currentIndex >= filteredTutores.length) {
+        return null;
+    }
+
     const tutor = filteredTutores[currentIndex];
+
+    // CORRECCIÓN: Validación adicional antes de acceder a tutor.email
+    if (!tutor) {
+        return null;
+    }
+
     const servicios = tutoresServicios[tutor.email] || [];
 
     return (
@@ -372,19 +404,17 @@ const TutoresCarrusel = () => {
             {showFilter && (
                 <div className="mb-3">
                     <div className="row g-2">
-                        <div className="col-12">
-                            <div className="input-group input-group-sm mb-2">
-                                <span className="input-group-text bg-white border-0">
-                                    <i className="bi bi-search text-muted"></i>
-                                </span>
-                                <input
-                                    type="text"
-                                    className="form-control border-0 py-2"
-                                    placeholder="Buscar por nombre..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                            </div>
+                        <div className="input-group">
+                        <span className="input-group-text bg-white border-0">
+                            <i className="bi bi-search text-muted"></i>
+                        </span>
+                            <input
+                                type="text"
+                                className="form-control form-control-sm border-0 py-2"
+                                placeholder="Buscar por nombre"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
                         </div>
                         <div className="col-12">
                             <CustomSelect
@@ -415,7 +445,7 @@ const TutoresCarrusel = () => {
             <div className="tutores-card card shadow-sm border-0 rounded-4 overflow-hidden">
                 <div className="tutor-slide-container position-relative">
                     <div className="tutor-images-wrapper">
-                        {isTransitioning && previousIndex !== null && (
+                        {isTransitioning && previousIndex !== null && filteredTutores[previousIndex] && (
                             <img
                                 src={getImageUrl(filteredTutores[previousIndex].foto_perfil)}
                                 className="tutor-image tutor-image-outgoing"
