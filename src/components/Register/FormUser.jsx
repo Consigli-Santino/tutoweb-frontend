@@ -5,13 +5,13 @@ import _ from 'lodash';
 import '../Login/LoginButton.css';
 import CustomSelect from "../CustomInputs/CustomSelect.jsx";
 import { useAuth } from '../../context/AuthContext';
-import { useEntidades } from '../../context/EntidadesContext'; // Import the entidades context
+import { useEntidades } from '../../context/EntidadesContext';
 import Unauthorized from "../Unauthorized/Unauthorized.jsx";
 
 const FormUser = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { roles: contextRoles, carreras: contextCarreras, isLoading: contextLoading } = useEntidades(); // Get data from context
+    const { roles: contextRoles, carreras: contextCarreras, isLoading: contextLoading } = useEntidades();
     const [searchParams] = useSearchParams();
     const emailParam = searchParams.get('email');
     const [error, setError] = useState(null);
@@ -39,34 +39,37 @@ const FormUser = () => {
 
         const fetchData = async () => {
             try {
-                // Carreras desde el contexto
                 if (contextCarreras && contextCarreras.length > 0) {
                     setCarreras(contextCarreras);
                 } else {
-                    // Solo haz la petición si no tienes carreras en el contexto
                     const carrerasUrl = (import.meta.env.VITE_BACKEND_URL) + '/carreras/all';
-                    const carrerasResponse = await fetch(carrerasUrl);
+                    const carrerasResponse = await fetch(carrerasUrl, {
+                        headers: {
+                            'ngrok-skip-browser-warning': 'true'
+                        }
+                    });
                     if (isMounted) {
                         const carrerasData = await carrerasResponse.json();
                         setCarreras(carrerasData.data);
                     }
                 }
 
-                // Roles desde el contexto para superadmin
                 const isSuperAdmin = user && user.roles && user.roles.includes('superAdmin');
                 if (isSuperAdmin && contextRoles && contextRoles.length > 0) {
                     setRoles(contextRoles);
                 } else {
-                    // Solo haz la petición si no tienes roles en el contexto
                     const rolesUrl = (import.meta.env.VITE_BACKEND_URL) + '/roles/all/register';
-                    const rolesResponse = await fetch(rolesUrl);
+                    const rolesResponse = await fetch(rolesUrl, {
+                        headers: {
+                            'ngrok-skip-browser-warning': 'true'
+                        }
+                    });
                     if (isMounted) {
                         const rolesData = await rolesResponse.json();
                         setRoles(rolesData.data);
                     }
                 }
 
-                // Cargar datos del usuario solo si hay un email en parámetros
                 if (emailParam && isMounted) {
                     setIsEditing(true);
                     setOriginalEmail(emailParam);
@@ -84,11 +87,10 @@ const FormUser = () => {
 
         fetchData();
 
-        // Limpieza para evitar actualizar estado en componentes desmontados
         return () => {
             isMounted = false;
         };
-    }, [emailParam]); // Solo dependencia del email para recuperar datos del usuario
+    }, [emailParam]);
 
     const fetchUserData = async (email) => {
         if (isLoading) return;
@@ -98,12 +100,13 @@ const FormUser = () => {
 
             const userUrl = `${import.meta.env.VITE_BACKEND_URL}/usuario/by-email/${email}`;
 
-            // Obtener token de localStorage
             const token = localStorage.getItem('token');
 
             const response = await fetch(userUrl, {
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Authorization':'Bearer ' + token,
+                    'Content-Type': 'application/json',
+                    'ngrok-skip-browser-warning': 'true'
                 }
             });
 
@@ -114,25 +117,37 @@ const FormUser = () => {
             const userData = await response.json();
             const user = userData.data;
 
-            // Actualizar estado del formulario con datos del usuario
             setFormData({
                 nombre: user.nombre || '',
                 apellido: user.apellido || '',
                 email: user.email || '',
                 password: '',
                 confirmPassword: '',
-                foto_perfil: null, // Corrige el nombre de la propiedad
+                foto_perfil: null,
                 id_rol: user.rol?.id?.toString() || '',
                 carrera_id: user.carreras?.[0]?.id?.toString() || ''
             });
 
-            // Si hay una imagen de perfil, mostrarla
             if (user.foto_perfil) {
                 const imageUrl = user.foto_perfil.startsWith('http')
                     ? user.foto_perfil
                     : `${import.meta.env.VITE_BACKEND_URL}${user.foto_perfil}`;
+                try {
+                    const imageResponse = await fetch(imageUrl, {
+                        headers: {
+                            'ngrok-skip-browser-warning': 'true'
+                        }
+                    });
 
-                setImagePreview(imageUrl);
+                    if (imageResponse.ok) {
+                        const blob = await imageResponse.blob();
+                        const objectURL = URL.createObjectURL(blob);
+                        setImagePreview(objectURL);
+                    }
+                } catch (error) {
+                    console.error('Error loading image:', error);
+                    setImagePreview(imageUrl);
+                }
             }
         } catch (error) {
             console.error('Error al cargar datos del usuario:', error);
@@ -149,7 +164,6 @@ const FormUser = () => {
                 foto_perfil: file
             }));
 
-            // Create preview of the image
             const reader = new FileReader();
             reader.onloadend = () => {
                 setImagePreview(reader.result);
@@ -169,14 +183,12 @@ const FormUser = () => {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        // Evitar múltiples envíos
         if (isLoading) {
             return;
         }
 
         setIsLoading(true);
 
-        // Validar contraseñas solo si se está registrando o si se están cambiando
         if (!isEditing || (formData.password && formData.confirmPassword)) {
             if (formData.password !== formData.confirmPassword) {
                 setError("Las contraseñas no coinciden");
@@ -185,10 +197,8 @@ const FormUser = () => {
             }
         }
 
-        // Limpiar errores previos
         setError(null);
 
-        // Preparar FormData para enviar
         const formDataToSend = new FormData();
         formDataToSend.append('nombre', formData.nombre);
         formDataToSend.append('apellido', formData.apellido);
@@ -208,8 +218,9 @@ const FormUser = () => {
             ? `${import.meta.env.VITE_BACKEND_URL}/usuario/${originalEmail}/form`
             : `${import.meta.env.VITE_BACKEND_URL}/usuario/register-user`;
 
-        // Obtener token si se está editando
-        const headers = {};
+        const headers = {
+            'ngrok-skip-browser-warning': 'true'
+        };
         if (isEditing) {
             const token = localStorage.getItem('token');
             if (token) {
@@ -217,7 +228,6 @@ const FormUser = () => {
             }
         }
 
-        // Hacer la petición
         fetch(url, {
             method: isEditing ? 'PUT' : 'POST',
             body: formDataToSend,
@@ -257,7 +267,6 @@ const FormUser = () => {
         <div className="container-fluid min-vh-100 d-flex align-items-center justify-content-center px-3 py-2">
             <div className="login-wrapper w-100 mx-auto" style={{maxWidth: '800px'}}>
                 <div className="card shadow border-0 rounded-4 overflow-hidden">
-                    {/* Header with blue background */}
                     <div className="card-header border-0 text-center p-3 p-md-4" style={{backgroundColor: '#283048'}}>
                         <div className="d-flex justify-content-center mb-2">
                             <div className="bg-white rounded-3 p-2" style={{width: '60px', height: '60px'}}>
@@ -267,7 +276,6 @@ const FormUser = () => {
                         <div className="text-white fw-bold fs-4">TutoWeb</div>
                     </div>
 
-                    {/* Form content */}
                     <div className="card-body p-3 p-md-4">
                         <h1 className="fw-bold text-center fs-4 mb-1">
                             {isEditing ? 'Editar Perfil' : 'Registro'}
@@ -322,7 +330,7 @@ const FormUser = () => {
                                         value={formData.email}
                                         onChange={handleChange}
                                         placeholder="Ingrese su correo institucional"
-                                        disabled={isLoading || isEditing} // Disable if editing
+                                        disabled={isLoading || isEditing}
                                         required
                                     />
                                 </div>
@@ -355,7 +363,7 @@ const FormUser = () => {
                                         onChange={handleChange}
                                         placeholder={isEditing ? "Nueva contraseña (opcional)" : "Ingrese la contraseña"}
                                         disabled={isLoading}
-                                        required={!isEditing} // Only required for new registration
+                                        required={!isEditing}
                                     />
                                 </div>
                                 <div className="col-md-6 mb-2">
@@ -368,7 +376,7 @@ const FormUser = () => {
                                         onChange={handleChange}
                                         placeholder="••••••"
                                         disabled={isLoading}
-                                        required={!isEditing || formData.password !== ''} // Required if not editing or if password has been changed
+                                        required={!isEditing || formData.password !== ''}
                                     />
                                 </div>
                             </div>

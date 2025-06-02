@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import '../Login/LoginButton.css';
 import '../../commonTables.css';
 import { useEntidades } from '../../context/EntidadesContext.jsx';
-import CustomSelect from '../../components/CustomInputs/CustomSelect.jsx'; // Importamos nuestro componente personalizado
+import CustomSelect from '../../components/CustomInputs/CustomSelect.jsx';
+import ExcelExportService from "../../services/ExcelExportService.js"; // Importamos nuestro componente personalizado
 
 const Users = () => {
     const navigate = useNavigate();
@@ -133,6 +134,11 @@ const Users = () => {
             setIsLoading(false);
         }
     };
+    const exportToExcel = async () => {
+        setIsLoading(true);
+        ExcelExportService.exportUsersToExcel(filteredUsuarios)
+
+    }
 
     const handleEdit = (id) => {
         navigate(`/admin/usuarios/editar/${id}`);
@@ -197,13 +203,19 @@ const Users = () => {
                                             variant="light"
                                         />
                                     </div>
-                                    <div className="col-md-1 col-6 mb-2 d-flex align-items-center">
+                                    <div className="col-md-4 col-12 mb-2 d-flex align-items-center justify-content-between">
                                         <button
-                                            className="btn btn-sm py-2 w-100 rounded-3 btn-light border-0"
+                                            className="btn btn-sm py-2 rounded-3 btn-light border-0 me-2"
                                             onClick={clearFilters}
                                             title="Limpiar filtros"
                                         >
-                                            <i className="bi bi-trash"></i>
+                                            <i className="bi bi-trash"></i> Limpiar
+                                        </button>
+                                        <button
+                                            className="btn btn-sm btn-outline-success rounded-pill"
+                                            onClick={exportToExcel}
+                                        >
+                                            <i className="bi bi-file-excel me-1"></i> Excel
                                         </button>
                                     </div>
                                 </div>

@@ -7,7 +7,6 @@ import Home from "./components/Home/Home.jsx";
 import FormUser from "./components/Register/FormUser.jsx";
 import Unauthorized from "./components/Unauthorized/Unauthorized.jsx";
 import ProtectedRoute from './components/ProtectedRoute/ProtectedRoute.jsx';
-import Clasess from "./components/Clases/Clasess.jsx";
 import Users from "./components/Admin/Users.jsx";
 import AppLayout from './components/Layout/AppLayout.jsx';
 import FormUserByAdmin from './components/Admin/FormUserByAdmin.jsx';
@@ -15,12 +14,17 @@ import TutorsCRUDMaterias from "./components/tutors/TutorsMaterias/TutorsCRUDMat
 import TutorsCRUDDisponibilidad from "./components/tutors/TutorsDisponibility/TutorsCRUDDisponibilidad.jsx";
 import TutorProfile from "./components/tutors/TutorProfile/TutorProfile.jsx";
 import TutorsCRUDServiciosTutoria from "./components/tutors/TutorsCRUDServiciosTutoria/TutorsCRUDServiciosTutoria.jsx";
-import AlumnoReservas from "./components/AlumnosTutores/AlumnoReservas.jsx";
 import PaymentPending from "./components/Payments/PaymentPending.jsx";
 import PaymentFailure from "./components/Payments/PaymentFailure.jsx";
 import PaymentSuccess from "./components/Payments/PaymentSucces.jsx";
 import ReservasContainer from "./components/AlumnosTutores/ReservasContainer.jsx";
 import Dashboard from "./components/Dashboard/Dashboard.jsx";
+import ListadoReservas from "./components/AlumnosTutores/ListadoReservas.jsx";
+import CarrerasMateriasCRUD from "./components/Carreras/CarrerasMateriasCRUD.jsx";
+import CalificacionesListado from "./components/Admin/Califications/CalificacionesListado.jsx";
+import NotificacionesListado from "./components/Admin/Notifications/NotificacionesListado.jsx";
+import AyudaPreguntasFrecuentes from "./components/AyudaPreguntasFrecuentes/AyudaPreguntasFrecuentes.jsx";
+import BubblePopGame from "./components/Home/BubblePopGame.jsx";
 
 function App() {
     return (
@@ -45,6 +49,26 @@ function App() {
                                     <Home />
                                 </ProtectedRoute>
                             } />
+                            <Route path="/faq" element={
+                                <ProtectedRoute path="/faq">
+                                    <AyudaPreguntasFrecuentes />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/plays" element={
+                                <ProtectedRoute path="/plays">
+                                    <BubblePopGame></BubblePopGame>
+                                </ProtectedRoute>
+                            }/>
+                            <Route path="/califications" element={
+                                <ProtectedRoute path="/califications">
+                                    <CalificacionesListado/>
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/notifications" element={
+                                <ProtectedRoute path="/Notifications">
+                                    <NotificacionesListado/>
+                                </ProtectedRoute>
+                            } />
                             <Route path="/subjects" element={
                                 <ProtectedRoute path="/subjects">
                                     <TutorsCRUDMaterias/>
@@ -60,10 +84,10 @@ function App() {
                                     <Dashboard/>
                                 </ProtectedRoute>
                             } />
-                            <Route path="/clases" element={
-                                <ProtectedRoute path="/clases">
-                                    <Clasess />
-                                </ProtectedRoute>
+                            <Route path="/listReservations" element={
+                                <ListadoReservas path="/listReservations">
+                                    <Dashboard/>
+                                </ListadoReservas>
                             } />
                             <Route path="/disponibility" element={
                                 <ProtectedRoute path="/disponibility">
@@ -73,6 +97,11 @@ function App() {
                             <Route path="/users" element={
                                 <ProtectedRoute path="/users">
                                     <Users />
+                                </ProtectedRoute>
+                            } />
+                            <Route path="/matcarr" element={
+                                <ProtectedRoute path="/matcarr">
+                                    <CarrerasMateriasCRUD />
                                 </ProtectedRoute>
                             } />
                             <Route path="/tutores/:email" element={

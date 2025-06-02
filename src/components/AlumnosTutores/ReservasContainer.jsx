@@ -1,16 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useEntidades } from '../../context/EntidadesContext.jsx';
 import ApiService from '../../services/ApiService';
 import '../../commonTables.css';
 import ReservaCard from './ReservaCard';
 import PaymentModal from './PaymentModal';
 import VideoCallModal from './VideoCallModal';
 import CalificacionModal from './CalificacionModal';
+import DateRangeFilter from '../Dashboard/DateRangeFilter';
+import CustomSelect from '../../components/CustomInputs/CustomSelect.jsx';
 
 const ReservasContainer = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const { materias } = useEntidades();
     const [searchParams] = useSearchParams();
 
     // Role determinations
@@ -24,6 +28,7 @@ const ReservasContainer = () => {
 
     // Main states
     const [reservas, setReservas] = useState([]);
+    const [filteredReservas, setFilteredReservas] = useState([]);
     const [activeTab, setActiveTab] = useState(isStudent ? 'estudiante' : 'tutor');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -32,6 +37,19 @@ const ReservasContainer = () => {
     // Confirmation states
     const [confirmActionId, setConfirmActionId] = useState(null);
     const [actionType, setActionType] = useState(null);
+
+    // Filter states
+    const [fechaDesde, setFechaDesde] = useState(() => {
+        const fechaDesde = new Date();
+        fechaDesde.setDate(fechaDesde.getDate() - 20); // 20 días hacia atrás
+        return fechaDesde.toISOString().split('T')[0];
+    });
+    const [fechaHasta, setFechaHasta] = useState(() => {
+        const fechaHasta = new Date();
+        fechaHasta.setDate(fechaHasta.getDate() + 10); // 10 días hacia adelante
+        return fechaHasta.toISOString().split('T')[0];
+    });
+    const [materiaFilter, setMateriaFilter] = useState('');
 
     // Modal states
     const [showJitsiModal, setShowJitsiModal] = useState(false);
@@ -49,6 +67,11 @@ const ReservasContainer = () => {
     useEffect(() => {
         fetchReservas();
     }, [activeTab]);
+
+    // Efecto para filtrar reservas cuando cambia el filtro de materia
+    useEffect(() => {
+        filterReservasByMateria();
+    }, [reservas, materiaFilter]);
 
     useEffect(() => {
         // Handle payment return parameters
@@ -82,7 +105,7 @@ const ReservasContainer = () => {
         }
     }, [searchParams, navigate]);
 
-    const fetchReservas = async () => {
+    const fetchReservas = async (fromDate = fechaDesde, toDate = fechaHasta) => {
         setIsLoading(true);
         setError(null);
 
@@ -90,7 +113,7 @@ const ReservasContainer = () => {
             let response;
 
             if (activeTab === 'estudiante') {
-                response = await ApiService.fetchReservasDetalladasByEstudiante();
+                response = await ApiService.fetchReservasDetalladasByEstudiante(fromDate, toDate);
 
                 if (response.success) {
                     // Sort reservations
@@ -105,16 +128,13 @@ const ReservasContainer = () => {
                         return dateA - dateB;
                     });
 
-                    // Primero configuramos las reservas
                     setReservas(sortedReservas);
-
-                    // Luego cargamos pagos y calificaciones, y actualizamos las reservas
                     await fetchAllPagosAndCalificaciones();
                 } else {
                     throw new Error(response.message || 'Error al obtener reservas');
                 }
             } else {
-                response = await ApiService.fetchReservasDetalladasByTutor();
+                response = await ApiService.fetchReservasDetalladasByTutor(fromDate, toDate);
 
                 if (response.success) {
                     // Sort reservations
@@ -130,8 +150,6 @@ const ReservasContainer = () => {
                     });
 
                     setReservas(sortedReservas);
-
-                    // También cargamos los pagos para el tutor
                     await fetchPagosByTutor();
                 } else {
                     throw new Error(response.message || 'Error al obtener reservas');
@@ -143,6 +161,43 @@ const ReservasContainer = () => {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    // Función para filtrar reservas por materia
+    const filterReservasByMateria = () => {
+        if (!materiaFilter) {
+            setFilteredReservas(reservas);
+        } else {
+            const filtered = reservas.filter(reserva =>
+                reserva.materia && reserva.materia.id.toString() === materiaFilter
+            );
+            setFilteredReservas(filtered);
+        }
+    };
+
+    // Función para aplicar filtros de fecha
+    const handleFilterChange = () => {
+        fetchReservas(fechaDesde, fechaHasta);
+    };
+
+    // Función para resetear filtros de fecha
+    const resetDateRange = () => {
+        const fechaDesde = new Date();
+        fechaDesde.setDate(fechaDesde.getDate() - 20);
+        const newFechaDesde = fechaDesde.toISOString().split('T')[0];
+
+        const fechaHasta = new Date();
+        fechaHasta.setDate(fechaHasta.getDate() + 10);
+        const newFechaHasta = fechaHasta.toISOString().split('T')[0];
+
+        setFechaDesde(newFechaDesde);
+        setFechaHasta(newFechaHasta);
+        fetchReservas(newFechaDesde, newFechaHasta);
+    };
+
+    // Función para limpiar filtro de materia
+    const resetMateriaFilter = () => {
+        setMateriaFilter('');
     };
 
     // Nuevo método para obtener los pagos cuando estamos en rol de tutor
@@ -178,7 +233,6 @@ const ReservasContainer = () => {
                 setReservas(prevReservas => {
                     const updatedReservas = prevReservas.map(reserva => {
                         const isCalificada = reservasCalificadas.includes(reserva.id);
-                        console.log(`Marcando reserva ${reserva.id} como ${isCalificada ? 'calificada' : 'no calificada'}`);
                         return {
                             ...reserva,
                             calificado: isCalificada
@@ -206,8 +260,6 @@ const ReservasContainer = () => {
         }
     };
 
-    // Esta función ya no se utiliza para verificar cada reserva individualmente
-    // Pero la mantenemos para posibles usos específicos
     const checkCalificacion = async (reservaId) => {
         try {
             const response = await ApiService.getCalificacionByReserva(reservaId);
@@ -462,15 +514,7 @@ const ReservasContainer = () => {
         return pago && pago.metodo_pago === 'efectivo' && pago.estado === 'pendiente';
     };
 
-    // New function to check if reservation can be rated
     const canRateReserva = (reserva) => {
-        // Logging para verificar el estado de la reserva
-        console.log(`Verificando reserva ${reserva.id}:`);
-        console.log(`- Estado: ${reserva.estado}`);
-        console.log(`- Pago: ${reservaPagos[reserva.id]?.estado || 'No hay pago'}`);
-        console.log(`- Calificada: ${reserva.calificado ? 'Sí' : 'No'}`);
-
-        // Solo se pueden calificar reservas completadas
         if (activeTab !== 'estudiante' || reserva.estado !== 'completada') {
             return false;
         }
@@ -550,11 +594,52 @@ const ReservasContainer = () => {
                         </div>
                     )}
 
+                    {/* Filtros de fecha */}
+                    <DateRangeFilter
+                        fechaDesde={fechaDesde}
+                        setFechaDesde={setFechaDesde}
+                        fechaHasta={fechaHasta}
+                        setFechaHasta={setFechaHasta}
+                        onFilter={handleFilterChange}
+                        resetDateRange={resetDateRange}
+                    />
+
+                    {/* Filtro de materia */}
+                    <div className="mb-4">
+                        <div className="row g-2">
+                            <div className="col-12 col-md-6 col-lg-4">
+                                <CustomSelect
+                                    value={materiaFilter}
+                                    onChange={(e) => setMateriaFilter(e.target.value)}
+                                    options={materias}
+                                    placeholder="Todas las materias"
+                                    className="form-select form-select-sm"
+                                    variant="light"
+                                />
+                            </div>
+                            <div className="col-12 col-md-2">
+                                <button
+                                    className="btn btn-sm btn-outline-secondary"
+                                    onClick={resetMateriaFilter}
+                                    title="Limpiar filtro de materia"
+                                >
+                                    <i className="bi bi-x-circle me-1"></i>
+                                    Limpiar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     {/* Reservations section */}
                     <div className="mb-4">
                         <h2 className="fs-5 fw-bold mb-3">
                             <i className="bi bi-calendar-check me-2 text-primary"></i>
                             {activeTab === 'estudiante' ? 'Mis reservas' : 'Reservas recibidas'}
+                            {materiaFilter && (
+                                <span className="badge bg-primary ms-2">
+                                    Filtrado por: {materias.find(m => m.id.toString() === materiaFilter)?.nombre}
+                                </span>
+                            )}
                         </h2>
 
                         <div className="reservas-container">
@@ -564,9 +649,9 @@ const ReservasContainer = () => {
                                         <span className="visually-hidden">Cargando...</span>
                                     </div>
                                 </div>
-                            ) : reservas.length > 0 ? (
+                            ) : filteredReservas.length > 0 ? (
                                 <div className="row g-3">
-                                    {reservas.map((reserva) => (
+                                    {filteredReservas.map((reserva) => (
                                         <ReservaCard
                                             key={reserva.id}
                                             reserva={reserva}
@@ -596,12 +681,28 @@ const ReservasContainer = () => {
                             ) : (
                                 <div className="empty-state">
                                     <i className="bi bi-calendar-x-fill empty-state-icon"></i>
-                                    <p>{activeTab === 'estudiante' ? 'No tienes reservas de tutorías' : 'No tienes reservas pendientes'}</p>
+                                    <p>
+                                        {materiaFilter
+                                            ? `No tienes reservas para la materia seleccionada en el rango de fechas especificado`
+                                            : activeTab === 'estudiante'
+                                                ? 'No tienes reservas de tutorías en el rango de fechas especificado'
+                                                : 'No tienes reservas pendientes en el rango de fechas especificado'
+                                        }
+                                    </p>
                                     <p className="text-muted">
                                         {activeTab === 'estudiante'
                                             ? 'Explora los servicios disponibles y realiza una reserva'
                                             : 'Cuando los estudiantes reserven tus tutorías, aparecerán aquí'}
                                     </p>
+                                    {materiaFilter && (
+                                        <button
+                                            className="btn btn-sm btn-outline-primary mt-2"
+                                            onClick={resetMateriaFilter}
+                                        >
+                                            <i className="bi bi-funnel me-1"></i>
+                                            Quitar filtro de materia
+                                        </button>
+                                    )}
                                 </div>
                             )}
                         </div>

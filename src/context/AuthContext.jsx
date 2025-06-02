@@ -89,7 +89,7 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setAvailableRoutesSideBar([]);
         setAvailableRoutesHomeBar([]);
-        window.location.href = loginUrl;
+        window.location.href = loginUrl+"?logout=true";
     };
     const hasAccess = (path) => {
         if (!user) return false;

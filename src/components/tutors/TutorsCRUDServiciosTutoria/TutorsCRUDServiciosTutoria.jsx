@@ -30,7 +30,6 @@ const TutorsCRUDServiciosTutoria = () => {
     // Opciones para modalidad
     const modalidadOptions = [
         { id: 'virtual', nombre: 'Virtual' },
-        { id: 'presencial', nombre: 'Presencial' },
         { id: 'ambas', nombre: 'Ambas' }
     ];
 
