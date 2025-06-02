@@ -23,7 +23,19 @@ class SidebarOptionsService {
             "name": "Notificaciones",
             "roles": ["superAdmin","alumno&tutor"],
             "path": "/Notifications"
-        }
+        },
+        {
+            "icon": "controller",
+            "name": "Juegos",
+            "roles": ["superAdmin","alumno&tutor"],
+            "path": "/plays"
+        },
+        {
+            "icon": "question-circle",
+            "name": "Ayuda",
+            "roles": ["alumno&tutor","superAdmin"],
+            "path": "/faq"
+        },
 
     ]
     loadSideBarOptionsBasedOnRole(roles) {

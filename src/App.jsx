@@ -24,6 +24,7 @@ import CarrerasMateriasCRUD from "./components/Carreras/CarrerasMateriasCRUD.jsx
 import CalificacionesListado from "./components/Admin/Califications/CalificacionesListado.jsx";
 import NotificacionesListado from "./components/Admin/Notifications/NotificacionesListado.jsx";
 import AyudaPreguntasFrecuentes from "./components/AyudaPreguntasFrecuentes/AyudaPreguntasFrecuentes.jsx";
+import BubblePopGame from "./components/Home/BubblePopGame.jsx";
 
 function App() {
     return (
@@ -53,7 +54,11 @@ function App() {
                                     <AyudaPreguntasFrecuentes />
                                 </ProtectedRoute>
                             } />
-
+                            <Route path="/plays" element={
+                                <ProtectedRoute path="/plays">
+                                    <BubblePopGame></BubblePopGame>
+                                </ProtectedRoute>
+                            }/>
                             <Route path="/califications" element={
                                 <ProtectedRoute path="/califications">
                                     <CalificacionesListado/>

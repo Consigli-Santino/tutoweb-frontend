@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
-    allowedHosts: ['good-ways-double.loca.lt'],
+    allowedHosts: ['tutoweb.icu'],
     cors: true,
     proxy: {
       '/api': {

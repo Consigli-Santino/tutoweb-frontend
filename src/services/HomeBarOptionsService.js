@@ -51,8 +51,14 @@ class HomeBarOptionsService {
         {
             "icon": "question-circle",
             "name": "Ayuda",
-            "roles": ["alumno", "alumno&tutor", "superAdmin", "guardia"],
+            "roles": ["alumno", "superAdmin", "guardia"],
             "path": "/faq"
+        },
+        {
+            "icon": "controller",
+            "name": "Juegos",
+            "roles": ["alumno"],
+            "path": "/plays"
         },
 
     ]
