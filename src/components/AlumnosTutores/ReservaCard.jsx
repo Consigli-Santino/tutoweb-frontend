@@ -33,8 +33,19 @@ const ReservaCard = ({
         return `${formattedDate} - ${time}`;
     };
 
-    const getEstadoBadge = (estado) => {
-        switch (estado) {
+    const getEstadoBadge = (estado, actualStatus = null, isExpired = false) => {
+        const status = actualStatus || estado;
+
+        if (status === 'expirada' || (isExpired && (estado === 'pendiente' || estado === 'confirmada'))) {
+            return (
+                <span className="badge bg-secondary">
+                    <i className="bi bi-clock-history me-1"></i>
+                    No realizada
+                </span>
+            );
+        }
+
+        switch (status) {
             case 'pendiente':
                 return (
                     <span className="badge bg-warning text-dark">
@@ -98,22 +109,106 @@ const ReservaCard = ({
         }
     };
 
+    const getPaymentWarningAlert = (paymentWarning) => {
+        if (!paymentWarning) return null;
+
+        const alertClass = paymentWarning.type === 'danger' ? 'alert-danger' : 'alert-warning';
+        const iconClass = paymentWarning.type === 'danger' ? 'bi-exclamation-triangle-fill' : 'bi-exclamation-circle-fill';
+
+        return (
+            <div className={`alert ${alertClass} alert-sm mt-2 mb-0`} role="alert">
+                <i className={`bi ${iconClass} me-1`}></i>
+                <small>{paymentWarning.message}</small>
+            </div>
+        );
+    };
+
+    const getClassTimeInfo = (reserva) => {
+        if (activeTab !== 'tutor' || reserva.estado !== 'confirmada') return null;
+
+        if (reserva.canStartClass) {
+            return (
+                <div className="alert alert-success alert-sm mt-2 mb-0" role="alert">
+                    <i className="bi bi-play-circle-fill me-1"></i>
+                    <small>¡Ya puedes iniciar la clase!</small>
+                </div>
+            );
+        }
+
+        if (reserva.timeUntilClass) {
+            return (
+                <div className="alert alert-info alert-sm mt-2 mb-0" role="alert">
+                    <i className="bi bi-clock me-1"></i>
+                    <small>Podrás iniciar la clase en {reserva.timeUntilClass}</small>
+                </div>
+            );
+        }
+
+        if (reserva.isExpired) {
+            return (
+                <div className="alert alert-secondary alert-sm mt-2 mb-0" role="alert">
+                    <i className="bi bi-clock-history me-1"></i>
+                    <small>Esta clase ya ha finalizado</small>
+                </div>
+            );
+        }
+
+        return null;
+    };
+
+    const shouldShowVideoCallButton = (reserva) => {
+        if (!reserva.servicio ||
+            (reserva.servicio.modalidad !== 'virtual' && reserva.servicio.modalidad !== 'ambas') ||
+            !reserva.sala_virtual) {
+            return false;
+        }
+
+        // Para estudiantes, mostrar siempre si está confirmada
+        if (activeTab === 'estudiante' && reserva.estado === 'confirmada') {
+            return true;
+        }
+
+        // Para tutores, solo mostrar si pueden iniciar la clase
+        if (activeTab === 'tutor' && reserva.estado === 'confirmada') {
+            return reserva.canStartClass || !reserva.isExpired;
+        }
+
+        return false;
+    };
+
+    const getVideoCallButtonText = (reserva) => {
+        if (activeTab === 'tutor') {
+            if (reserva.canStartClass) {
+                return "Iniciar Clase";
+            } else if (reserva.timeUntilClass) {
+                return `Disponible en ${reserva.timeUntilClass}`;
+            }
+        }
+        return "Acceder a Videollamada";
+    };
+
+    const isVideoCallButtonDisabled = (reserva) => {
+        return activeTab === 'tutor' && !reserva.canStartClass && !reserva.isExpired;
+    };
+
     return (
         <div className="col-12 col-md-6 col-lg-4">
-            <div className={`materia-card ${isPastReserva ? 'opacity-75' : ''}`}>
+            <div className={`materia-card ${isPastReserva ? 'opacity-75' : ''} ${reserva.actualStatus === 'expirada' ? 'border-secondary' : ''}`}>
                 <div className="d-flex justify-content-between align-items-start mb-2">
                     <div>
                         <h3 className="materia-title">
                             {reserva.materia?.nombre || `Tutoría #${reserva.id}`}
                         </h3>
                         <div className="mb-1">
-                            {getEstadoBadge(reserva.estado)}
+                            {getEstadoBadge(reserva.estado, reserva.actualStatus, reserva.isExpired)}
+
                             {/* Payment status badge if completed */}
                             {reserva.estado === 'completada' && (
                                 <span className="ms-2">
                                     {getEstadoPagoBadge(reservaPagos[reserva.id])}
                                 </span>
                             )}
+
                             {/* Rating badge if already rated */}
                             {reserva.calificado === true && (
                                 <span className="badge bg-primary ms-2">
@@ -127,7 +222,7 @@ const ReservaCard = ({
                     {/* Action buttons based on role and state */}
                     <div>
                         {/* Cancel reservation (student or tutor) */}
-                        {canCancelReserva && (
+                        {canCancelReserva && reserva.actualStatus !== 'expirada' && (
                             <div>
                                 {(confirmActionId === reserva.id && actionType === 'cancel') ? (
                                     <div className="d-flex gap-1">
@@ -165,7 +260,7 @@ const ReservaCard = ({
                         )}
 
                         {/* Confirm reservation (tutor only) */}
-                        {canConfirmReserva && (
+                        {canConfirmReserva && reserva.actualStatus !== 'expirada' && (
                             <div className="mt-2">
                                 {(confirmActionId === reserva.id && actionType === 'confirm') ? (
                                     <div className="d-flex gap-1">
@@ -218,7 +313,7 @@ const ReservaCard = ({
                         )}
 
                         {/* Complete button (tutor only) */}
-                        {canCompleteReserva && (
+                        {canCompleteReserva && reserva.actualStatus !== 'expirada' && (
                             <div className="mt-2">
                                 {(confirmActionId === reserva.id && actionType === 'complete') ? (
                                     <div className="d-flex gap-1">
@@ -390,39 +485,52 @@ const ReservaCard = ({
                         </div>
                     )}
 
+                    {/* Video call section */}
+                    {shouldShowVideoCallButton(reserva) && (
+                        <div className="d-flex align-items-center mb-2">
+                            <i className="bi bi-camera-video me-2 text-primary"></i>
+                            <div className="sala-virtual-container">
+                                <span>Sala Virtual: </span>
+                                <div className="mt-1">
+                                    <button
+                                        className={`btn btn-sm ${isVideoCallButtonDisabled(reserva) ? 'btn-outline-secondary' : 'btn-primary'} me-1`}
+                                        onClick={() => startVideoCall(reserva)}
+                                        disabled={isVideoCallButtonDisabled(reserva)}
+                                        title={isVideoCallButtonDisabled(reserva) ? "Aún no puedes acceder" : "Acceder a la videollamada"}
+                                    >
+                                        <i className="bi bi-camera-video-fill me-1"></i>
+                                        {getVideoCallButtonText(reserva)}
+                                    </button>
+
+                                    <a
+                                        href={reserva.sala_virtual}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="btn btn-sm btn-outline-secondary"
+                                        title="Abrir en nueva pestaña"
+                                    >
+                                        <i className="bi bi-box-arrow-up-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* No virtual room available message */}
                     {reserva.servicio &&
                         (reserva.servicio.modalidad === 'virtual' || reserva.servicio.modalidad === 'ambas') &&
-                        reserva.estado === 'confirmada' && (
+                        reserva.estado === 'confirmada' && !reserva.sala_virtual && (
                             <div className="d-flex align-items-center mb-2">
-                                <i className="bi bi-camera-video me-2 text-primary"></i>
-                                {reserva.sala_virtual ? (
-                                    <div className="sala-virtual-container">
-                                        <span>Sala Virtual: </span>
-                                        <div className="mt-1">
-                                            <button
-                                                className="btn btn-sm btn-primary me-1"
-                                                onClick={() => startVideoCall(reserva)}
-                                            >
-                                                <i className="bi bi-camera-video-fill me-1"></i>
-                                                Iniciar Videollamada
-                                            </button>
-
-                                            <a
-                                                href={reserva.sala_virtual}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="btn btn-sm btn-outline-secondary"
-                                                title="Abrir en nueva pestaña"
-                                            >
-                                                <i className="bi bi-box-arrow-up-right"></i>
-                                            </a>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <span className="text-muted">Sala pendiente de configuración</span>
-                                )}
+                                <i className="bi bi-camera-video me-2 text-muted"></i>
+                                <span className="text-muted">Sala pendiente de configuración</span>
                             </div>
                         )}
+
+                    {/* Payment warning alert */}
+                    {getPaymentWarningAlert(reserva.paymentWarning)}
+
+                    {/* Class time info for tutors */}
+                    {getClassTimeInfo(reserva)}
 
                     {/* Reservation notes */}
                     {reserva.notas && (

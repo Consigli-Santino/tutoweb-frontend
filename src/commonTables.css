@@ -148,3 +148,46 @@
 .home-bar-spacing {
     padding-bottom: 80px;
 }
+/* Estilos adicionales para las validaciones en ReservasContainer */
+
+/* Alertas más pequeñas para las cards */
+.alert-sm {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 0.375rem;
+}
+
+/* Reservas expiradas con borde gris */
+.materia-card.border-secondary {
+    border: 2px solid #6c757d !important;
+}
+
+/* Estados de reserva */
+.badge.bg-secondary {
+    background-color: #6c757d !important;
+}
+
+/* Botones deshabilitados para videollamadas */
+.btn-outline-secondary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Alertas dentro de las cards */
+.materia-card .alert {
+    border: none;
+    padding: 0.5rem;
+    margin: 0.5rem 0;
+    border-radius: 0.375rem;
+}
+
+.materia-card .alert-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #721c24;
+}
+
+.materia-card .alert-warning {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: #664d03;
+}
+
