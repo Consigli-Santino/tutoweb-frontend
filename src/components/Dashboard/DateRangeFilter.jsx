@@ -42,7 +42,7 @@ const DateRangeFilter = ({ fechaDesde, setFechaDesde, fechaHasta, setFechaHasta,
                             className="btn btn-sm btn-primary"
                             onClick={onFilter}
                         >
-                            <i className="bi bi-funnel me-1"></i> Filtrar
+                            <i className="me-1"></i> Filtrar
                         </button>
                     </div>
                 </div>

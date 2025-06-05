@@ -41,12 +41,12 @@ const ReservasContainer = () => {
     // Filter states
     const [fechaDesde, setFechaDesde] = useState(() => {
         const fechaDesde = new Date();
-        fechaDesde.setDate(fechaDesde.getDate() - 20); // 20 días hacia atrás
+        fechaDesde.setDate(fechaDesde.getDate() - 20);
         return fechaDesde.toISOString().split('T')[0];
     });
     const [fechaHasta, setFechaHasta] = useState(() => {
         const fechaHasta = new Date();
-        fechaHasta.setDate(fechaHasta.getDate() + 10); // 10 días hacia adelante
+        fechaHasta.setDate(fechaHasta.getDate() + 10);
         return fechaHasta.toISOString().split('T')[0];
     });
     const [materiaFilter, setMateriaFilter] = useState('');
@@ -60,21 +60,124 @@ const ReservasContainer = () => {
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     const [reservaPagos, setReservaPagos] = useState({});
 
-    // New state for rating modal
     const [showCalificacionModal, setShowCalificacionModal] = useState(false);
     const [reservaToRate, setReservaToRate] = useState(null);
+
+    // Nuevas funciones de validación
+    const isReservaExpired = (reserva) => {
+        const reservaDateTime = new Date(`${reserva.fecha}T${reserva.hora_fin}`);
+        const now = new Date();
+        return now > reservaDateTime;
+    };
+
+    const getReservaStatus = (reserva, pago = null) => {
+        const isExpired = isReservaExpired(reserva);
+
+        // Si la reserva ya pasó y no está completada, considerarla como "expirada"
+        if (isExpired && (reserva.estado === 'pendiente' || reserva.estado === 'confirmada')) {
+            return 'expirada';
+        }
+
+        return reserva.estado;
+    };
+
+    const getPaymentWarning = (reserva, pago = null) => {
+        if (activeTab !== 'estudiante' || reserva.estado !== 'completada') return null;
+
+        const reservaDate = new Date(reserva.fecha);
+        const now = new Date();
+        const daysDiff = Math.floor((now - reservaDate) / (1000 * 60 * 60 * 24));
+
+        // Si no hay pago o está pendiente y han pasado más de 3 días
+        if ((!pago || pago.estado === 'pendiente') && daysDiff > 3) {
+            return {
+                type: 'danger',
+                message: `Pago pendiente hace ${daysDiff} días. Por favor, realiza el pago lo antes posible.`
+            };
+        }
+
+        // Si no hay pago o está pendiente y han pasado 1-3 días
+        if ((!pago || pago.estado === 'pendiente') && daysDiff >= 1) {
+            return {
+                type: 'warning',
+                message: `Pago pendiente hace ${daysDiff} día(s). Recuerda realizar el pago.`
+            };
+        }
+
+        return null;
+    };
+
+    const canStartClass = (reserva) => {
+        if (activeTab !== 'tutor' || reserva.estado !== 'confirmada') return false;
+
+        const now = new Date();
+        const reservaDate = new Date(reserva.fecha);
+        const [horaInicio] = reserva.hora_inicio.split(':');
+        const [horaFin] = reserva.hora_fin.split(':');
+
+        const startTime = new Date(reservaDate);
+        startTime.setHours(parseInt(horaInicio), 0, 0, 0);
+
+        const endTime = new Date(reservaDate);
+        endTime.setHours(parseInt(horaFin), 0, 0, 0);
+
+        // Permitir acceso 15 minutos antes y hasta el final de la clase
+        const allowStartTime = new Date(startTime.getTime() - 15 * 60 * 1000);
+
+        return now >= allowStartTime && now <= endTime;
+    };
+
+    const getTimeUntilClass = (reserva) => {
+        const now = new Date();
+        const reservaDate = new Date(reserva.fecha);
+        const [horaInicio] = reserva.hora_inicio.split(':');
+
+        const startTime = new Date(reservaDate);
+        startTime.setHours(parseInt(horaInicio), 0, 0, 0);
+
+        const allowStartTime = new Date(startTime.getTime() - 15 * 60 * 1000);
+        const timeDiff = allowStartTime - now;
+
+        if (timeDiff <= 0) return null;
+
+        const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+
+        if (hours > 0) {
+            return `${hours}h ${minutes}m`;
+        }
+        return `${minutes}m`;
+    };
+
+    // Aplicar validaciones a las reservas
+    const processReservasWithValidations = (reservasList) => {
+        return reservasList.map(reserva => {
+            const pago = reservaPagos[reserva.id];
+            const actualStatus = getReservaStatus(reserva, pago);
+            const paymentWarning = getPaymentWarning(reserva, pago);
+            const canStart = canStartClass(reserva);
+            const timeUntil = getTimeUntilClass(reserva);
+
+            return {
+                ...reserva,
+                actualStatus,
+                paymentWarning,
+                canStartClass: canStart,
+                timeUntilClass: timeUntil,
+                isExpired: isReservaExpired(reserva)
+            };
+        });
+    };
 
     useEffect(() => {
         fetchReservas();
     }, [activeTab]);
 
-    // Efecto para filtrar reservas cuando cambia el filtro de materia
     useEffect(() => {
         filterReservasByMateria();
     }, [reservas, materiaFilter]);
 
     useEffect(() => {
-        // Handle payment return parameters
         const paymentStatus = searchParams.get('payment_status');
         const reservaId = searchParams.get('reserva_id');
         const paymentError = searchParams.get('payment_error');
@@ -116,7 +219,6 @@ const ReservasContainer = () => {
                 response = await ApiService.fetchReservasDetalladasByEstudiante(fromDate, toDate);
 
                 if (response.success) {
-                    // Sort reservations
                     const sortedReservas = response.data.sort((a, b) => {
                         const estadoOrder = { 'pendiente': 0, 'confirmada': 1, 'completada': 2, 'cancelada': 3 };
                         if (estadoOrder[a.estado] !== estadoOrder[b.estado]) {
@@ -137,7 +239,6 @@ const ReservasContainer = () => {
                 response = await ApiService.fetchReservasDetalladasByTutor(fromDate, toDate);
 
                 if (response.success) {
-                    // Sort reservations
                     const sortedReservas = response.data.sort((a, b) => {
                         const estadoOrder = { 'pendiente': 0, 'confirmada': 1, 'completada': 2, 'cancelada': 3 };
                         if (estadoOrder[a.estado] !== estadoOrder[b.estado]) {
@@ -163,7 +264,6 @@ const ReservasContainer = () => {
         }
     };
 
-    // Función para filtrar reservas por materia
     const filterReservasByMateria = () => {
         if (!materiaFilter) {
             setFilteredReservas(reservas);
@@ -175,12 +275,10 @@ const ReservasContainer = () => {
         }
     };
 
-    // Función para aplicar filtros de fecha
     const handleFilterChange = () => {
         fetchReservas(fechaDesde, fechaHasta);
     };
 
-    // Función para resetear filtros de fecha
     const resetDateRange = () => {
         const fechaDesde = new Date();
         fechaDesde.setDate(fechaDesde.getDate() - 20);
@@ -195,12 +293,10 @@ const ReservasContainer = () => {
         fetchReservas(newFechaDesde, newFechaHasta);
     };
 
-    // Función para limpiar filtro de materia
     const resetMateriaFilter = () => {
         setMateriaFilter('');
     };
 
-    // Nuevo método para obtener los pagos cuando estamos en rol de tutor
     const fetchPagosByTutor = async () => {
         try {
             const pagosResponse = await ApiService.fetchPagosByTutor();
@@ -213,23 +309,18 @@ const ReservasContainer = () => {
         }
     };
 
-    // Nuevo método para obtener todos los pagos y calificaciones de una vez
     const fetchAllPagosAndCalificaciones = async () => {
         try {
-            // Obtener todos los pagos para las reservas del estudiante
             const pagosResponse = await ApiService.fetchPagosByEstudiante();
             if (pagosResponse.success) {
                 setReservaPagos(pagosResponse.data);
             }
 
-            // Obtener todas las calificaciones para las reservas del estudiante
             const calificacionesResponse = await ApiService.getCalificacionesForEstudianteReservas();
             if (calificacionesResponse.success) {
-                // Guardar los IDs de las reservas que ya tienen calificación
                 const reservasCalificadas = Object.keys(calificacionesResponse.data).map(id => parseInt(id));
                 console.log("Reservas calificadas:", reservasCalificadas);
 
-                // Explícitamente marcar cada reserva como calificada o no
                 setReservas(prevReservas => {
                     const updatedReservas = prevReservas.map(reserva => {
                         const isCalificada = reservasCalificadas.includes(reserva.id);
@@ -257,24 +348,6 @@ const ReservasContainer = () => {
             }
         } catch (err) {
             console.error(`Error fetching pago for reserva ${reservaId}:`, err);
-        }
-    };
-
-    const checkCalificacion = async (reservaId) => {
-        try {
-            const response = await ApiService.getCalificacionByReserva(reservaId);
-            if (response.success) {
-                // Update reservas to mark as already rated
-                setReservas(prevReservas =>
-                    prevReservas.map(reserva =>
-                        reserva.id === reservaId
-                            ? { ...reserva, calificado: true }
-                            : reserva
-                    )
-                );
-            }
-        } catch (err) {
-            console.error(`Error checking calificacion for reserva ${reservaId}:`, err);
         }
     };
 
@@ -395,21 +468,19 @@ const ReservasContainer = () => {
         }
     };
 
-    // New function to open the rating modal
     const handleOpenRatingModal = (reserva) => {
         setReservaToRate(reserva);
         setShowCalificacionModal(true);
     };
 
-    // New function to submit rating
     const handleSubmitRating = async (rating, comment) => {
         if (!reservaToRate) return;
 
         try {
             const calificacionData = {
                 reserva_id: reservaToRate.id,
-                calificador_id: user.id,  // Current user as calificador
-                calificado_id: reservaToRate.tutor.id,  // Rating the tutor
+                calificador_id: user.id,
+                calificado_id: reservaToRate.tutor.id,
                 puntuacion: rating,
                 comentario: comment
             };
@@ -419,7 +490,6 @@ const ReservasContainer = () => {
             if (response.success) {
                 setSuccess("Calificación enviada correctamente");
 
-                // Update the reserva to show it's been rated
                 setReservas(prevReservas =>
                     prevReservas.map(reserva =>
                         reserva.id === reservaToRate.id
@@ -429,8 +499,6 @@ const ReservasContainer = () => {
                 );
 
                 console.log(`Reserva ${reservaToRate.id} marcada como calificada`);
-
-                // Also update the local state to immediately show the change
                 reservaToRate.calificado = true;
             } else {
                 throw new Error(response.message || 'Error enviando calificación');
@@ -445,10 +513,23 @@ const ReservasContainer = () => {
     };
 
     const startVideoCall = (reserva) => {
+        // Validar si puede iniciar la clase
+        if (!reserva.canStartClass && activeTab === 'tutor') {
+            const timeUntil = reserva.timeUntilClass;
+            if (timeUntil) {
+                setError(`No puedes iniciar la clase aún. Faltan ${timeUntil} para que puedas acceder.`);
+                return;
+            } else if (reserva.isExpired) {
+                setError("Esta clase ya ha terminado. No puedes acceder a la sala virtual.");
+                return;
+            }
+        }
+
         if (!reserva.sala_virtual) {
             setError("No hay sala virtual disponible para esta reserva.");
             return;
         }
+
         let roomUrl = reserva.sala_virtual;
         if (!roomUrl.startsWith('http')) {
             roomUrl = `https://meet.jit.si/${roomUrl}`;
@@ -471,9 +552,15 @@ const ReservasContainer = () => {
         navigate(-1);
     };
 
-    // Reservation state verification functions
+    // Funciones de validación de acciones actualizadas
     const canCancelReserva = (reserva) => {
-        if (reserva.estado !== 'pendiente' && reserva.estado !== 'confirmada') {
+        const actualStatus = reserva.actualStatus || reserva.estado;
+
+        if (actualStatus !== 'pendiente' && actualStatus !== 'confirmada') {
+            return false;
+        }
+
+        if (actualStatus === 'expirada') {
             return false;
         }
 
@@ -486,11 +573,13 @@ const ReservasContainer = () => {
     };
 
     const canConfirmReserva = (reserva) => {
-        return activeTab === 'tutor' && reserva.estado === 'pendiente';
+        const actualStatus = reserva.actualStatus || reserva.estado;
+        return activeTab === 'tutor' && actualStatus === 'pendiente' && !reserva.isExpired;
     };
 
     const canCompleteReserva = (reserva) => {
-        return activeTab === 'tutor' && reserva.estado === 'confirmada';
+        const actualStatus = reserva.actualStatus || reserva.estado;
+        return activeTab === 'tutor' && actualStatus === 'confirmada' && !reserva.isExpired;
     };
 
     const canPayReserva = (reserva) => {
@@ -519,13 +608,11 @@ const ReservasContainer = () => {
             return false;
         }
 
-        // Solo se pueden calificar reservas con pago completado
         const pago = reservaPagos[reserva.id];
         if (!pago || pago.estado !== 'completado') {
             return false;
         }
 
-        // No se puede calificar si ya tiene calificación
         return reserva.calificado !== true;
     };
 
@@ -534,6 +621,11 @@ const ReservasContainer = () => {
         const now = new Date();
         return now > reservaDateTime;
     };
+
+    // Procesar reservas con validaciones
+    const processedReservas = useMemo(() => {
+        return processReservasWithValidations(filteredReservas);
+    }, [filteredReservas, reservaPagos, activeTab]);
 
     return (
         <div className="container-fluid px-3 py-2">
@@ -649,9 +741,9 @@ const ReservasContainer = () => {
                                         <span className="visually-hidden">Cargando...</span>
                                     </div>
                                 </div>
-                            ) : filteredReservas.length > 0 ? (
+                            ) : processedReservas.length > 0 ? (
                                 <div className="row g-3">
-                                    {filteredReservas.map((reserva) => (
+                                    {processedReservas.map((reserva) => (
                                         <ReservaCard
                                             key={reserva.id}
                                             reserva={reserva}
@@ -722,16 +814,25 @@ const ReservasContainer = () => {
                             <div className="mt-1">
                                 Después del pago, puedes calificar la tutoría para compartir tu experiencia.
                             </div>
+                            <div className="mt-1 text-warning">
+                                <strong>Importante:</strong> Debes realizar el pago dentro de los 3 días posteriores a la tutoría.
+                            </div>
                         </div>
                     ) : (
                         <div className="alert alert-info mt-4">
                             <i className="bi bi-info-circle-fill me-2"></i>
                             <strong>Información:</strong> Como tutor, puedes confirmar o cancelar las reservas pendientes. Una vez finalizada la tutoría, márcala como completada.
                             <div className="mt-1">
+                                Solo puedes acceder a la sala virtual 15 minutos antes del inicio de la clase y hasta el final de la misma.
+                            </div>
+                            <div className="mt-1">
                                 Si el estudiante paga en efectivo, deberás registrar y confirmar el pago manualmente.
                             </div>
                             <div className="mt-1">
                                 Las calificaciones de los estudiantes afectan tu puntuación promedio visible en tu perfil.
+                            </div>
+                            <div className="mt-1 text-warning">
+                                <strong>Importante:</strong> Las reservas que pasen su fecha límite sin confirmarse se marcarán automáticamente como no realizadas.
                             </div>
                         </div>
                     )}
