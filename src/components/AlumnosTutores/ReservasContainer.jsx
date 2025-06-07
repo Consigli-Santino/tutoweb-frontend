@@ -34,7 +34,7 @@ const ReservasContainer = () => {
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
 
-    // NEW: State for reserva actions
+    // State for reserva actions
     const [reservaActions, setReservaActions] = useState({});
 
     // Confirmation states
@@ -62,11 +62,9 @@ const ReservasContainer = () => {
     const [currentReserva, setCurrentReserva] = useState(null);
     const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     const [reservaPagos, setReservaPagos] = useState({});
-
     const [showCalificacionModal, setShowCalificacionModal] = useState(false);
     const [reservaToRate, setReservaToRate] = useState(null);
-
-    // Funciones de validación existentes
+    // Validation functions
     const isReservaExpired = (reserva) => {
         const reservaDateTime = new Date(`${reserva.fecha}T${reserva.hora_fin}`);
         const now = new Date();
@@ -146,6 +144,75 @@ const ReservasContainer = () => {
         return `${minutes}m`;
     };
 
+    // Action validation functions
+    const canCancelReserva = (reserva) => {
+        const actualStatus = reserva.actualStatus || reserva.estado;
+
+        if (actualStatus !== 'pendiente' && actualStatus !== 'confirmada') {
+            return false;
+        }
+
+        if (actualStatus === 'expirada') {
+            return false;
+        }
+
+        const reservaDateTime = new Date(`${reserva.fecha}T${reserva.hora_inicio}`);
+        const now = new Date();
+        const hoursBeforeLimit = 2;
+        const limitTime = new Date(reservaDateTime.getTime() - (hoursBeforeLimit * 60 * 60 * 1000));
+
+        return now < limitTime;
+    };
+
+    const canConfirmReserva = (reserva) => {
+        const actualStatus = reserva.actualStatus || reserva.estado;
+        return activeTab === 'tutor' && actualStatus === 'pendiente' && !reserva.isExpired;
+    };
+
+    const canCompleteReserva = (reserva) => {
+        const actualStatus = reserva.actualStatus || reserva.estado;
+        return activeTab === 'tutor' && actualStatus === 'confirmada' && reserva.isExpired;
+    };
+
+    const canPayReserva = (reserva) => {
+        if (activeTab !== 'estudiante' || reserva.estado !== 'completada') {
+            return false;
+        }
+        const pago = reservaPagos[reserva.id];
+        if (pago && pago.estado === 'completado') {
+            return false;
+        }
+
+        return true;
+    };
+
+    const canConfirmEfectivoPago = (reserva) => {
+        if (activeTab !== 'tutor' || reserva.estado !== 'completada') {
+            return false;
+        }
+
+        const pago = reservaPagos[reserva.id];
+        return pago && pago.metodo_pago === 'efectivo' && pago.estado === 'pendiente';
+    };
+
+    const canRateReserva = (reserva) => {
+        if (activeTab !== 'estudiante' || reserva.estado !== 'completada') {
+            return false;
+        }
+
+        const pago = reservaPagos[reserva.id];
+        if (!pago || pago.estado !== 'completado') {
+            return false;
+        }
+
+        return reserva.calificado !== true;
+    };
+
+    const isPastReserva = (reserva) => {
+        const reservaDateTime = new Date(`${reserva.fecha}T${reserva.hora_fin}`);
+        const now = new Date();
+        return now > reservaDateTime;
+    };
     // Function to fetch reserva actions
     const fetchReservaActions = async (reservaIds) => {
         if (!reservaIds || reservaIds.length === 0) {
@@ -156,7 +223,6 @@ const ReservasContainer = () => {
         try {
             const response = await ApiService.getReservasActions(reservaIds);
             if (response.success) {
-                // Convert array to object keyed by reserva_id
                 const actionsMap = {};
                 response.data.forEach(action => {
                     actionsMap[action.reserva_id] = action;
@@ -174,7 +240,6 @@ const ReservasContainer = () => {
         try {
             const response = await ApiService.recordVideoCallAction(reservaId);
             if (response.success) {
-                // Update local state
                 setReservaActions(prev => ({
                     ...prev,
                     [reservaId]: response.data
@@ -189,7 +254,7 @@ const ReservasContainer = () => {
         }
     };
 
-    // Aplicar validaciones a las reservas
+    // Apply validations to reservations
     const processReservasWithValidations = (reservasList) => {
         return reservasList.map(reserva => {
             const pago = reservaPagos[reserva.id];
@@ -209,52 +274,57 @@ const ReservasContainer = () => {
         });
     };
 
-    useEffect(() => {
-        fetchReservas();
-    }, [activeTab]);
-
-    useEffect(() => {
-        filterReservasByMateria();
-    }, [reservas, materiaFilter]);
-
-    // NEW: Effect to fetch actions when reservas change
-    useEffect(() => {
-        if (reservas.length > 0) {
-            const reservaIds = reservas.map(r => r.id);
-            fetchReservaActions(reservaIds);
+    const fetchPagosByTutor = async () => {
+        try {
+            const pagosResponse = await ApiService.fetchPagosByTutor();
+            if (pagosResponse.success) {
+                setReservaPagos(pagosResponse.data);
+            }
+        } catch (err) {
+            console.error("Error fetching pagos for tutor:", err);
         }
-    }, [reservas]);
+    };
 
-    useEffect(() => {
-        const paymentStatus = searchParams.get('payment_status');
-        const reservaId = searchParams.get('reserva_id');
-        const paymentError = searchParams.get('payment_error');
-
-        if (paymentStatus) {
-            if (paymentStatus === 'approved') {
-                setSuccess("¡Pago completado con éxito! La información se actualizará en unos segundos.");
-                fetchReservas();
-                if (reservaId) {
-                    fetchPagoByReserva(parseInt(reservaId));
-                }
-            }
-            else if (paymentStatus === 'pending') {
-                setSuccess("El pago está en proceso. Se te notificará cuando se confirme.");
-                fetchReservas();
-            }
-            else {
-                setError("El pago no se completó. Por favor, intenta nuevamente.");
-                fetchReservas();
+    const fetchAllPagosAndCalificaciones = async () => {
+        try {
+            const pagosResponse = await ApiService.fetchPagosByEstudiante();
+            if (pagosResponse.success) {
+                setReservaPagos(pagosResponse.data);
             }
 
-            navigate('/reservas', { replace: true });
-        }
+            const calificacionesResponse = await ApiService.getCalificacionesForEstudianteReservas();
+            if (calificacionesResponse.success) {
+                const reservasCalificadas = Object.keys(calificacionesResponse.data).map(id => parseInt(id));
 
-        if (paymentError) {
-            setError("Ocurrió un error al procesar el pago. Por favor, intenta nuevamente.");
-            navigate('/reservas', { replace: true });
+                setReservas(prevReservas => {
+                    const updatedReservas = prevReservas.map(reserva => {
+                        const isCalificada = reservasCalificadas.includes(reserva.id);
+                        return {
+                            ...reserva,
+                            calificado: isCalificada
+                        };
+                    });
+                    return updatedReservas;
+                });
+            }
+        } catch (err) {
+            console.error("Error fetching pagos and calificaciones:", err);
         }
-    }, [searchParams, navigate]);
+    };
+
+    const fetchPagoByReserva = async (reservaId) => {
+        try {
+            const response = await ApiService.fetchPagoByReserva(reservaId);
+            if (response.success) {
+                setReservaPagos(prevState => ({
+                    ...prevState,
+                    [reservaId]: response.data
+                }));
+            }
+        } catch (err) {
+            console.error(`Error fetching pago for reserva ${reservaId}:`, err);
+        }
+    };
 
     const fetchReservas = async (fromDate = fechaDesde, toDate = fechaHasta) => {
         setIsLoading(true);
@@ -311,7 +381,54 @@ const ReservasContainer = () => {
             setIsLoading(false);
         }
     };
+    // Effects
+    useEffect(() => {
+        fetchReservas();
+    }, [activeTab]);
 
+    useEffect(() => {
+        filterReservasByMateria();
+    }, [reservas, materiaFilter]);
+
+    useEffect(() => {
+        if (reservas.length > 0) {
+            const reservaIds = reservas.map(r => r.id);
+            fetchReservaActions(reservaIds);
+        }
+    }, [reservas]);
+
+    useEffect(() => {
+        const paymentStatus = searchParams.get('payment_status');
+        const reservaId = searchParams.get('reserva_id');
+        const paymentError = searchParams.get('payment_error');
+
+        if (paymentStatus) {
+            if (paymentStatus === 'approved') {
+                setSuccess("¡Pago completado con éxito! La información se actualizará en unos segundos.");
+                fetchReservas();
+                if (reservaId) {
+                    fetchPagoByReserva(parseInt(reservaId));
+                }
+            }
+            else if (paymentStatus === 'pending') {
+                setSuccess("El pago está en proceso. Se te notificará cuando se confirme.");
+                fetchReservas();
+            }
+            else {
+                setError("El pago no se completó. Por favor, intenta nuevamente.");
+                fetchReservas();
+            }
+
+            navigate('/reservas', { replace: true });
+        }
+
+        if (paymentError) {
+            setError("Ocurrió un error al procesar el pago. Por favor, intenta nuevamente.");
+            navigate('/reservas', { replace: true });
+        }
+    }, [searchParams, navigate]);
+
+    // Filter and utility functions
     const filterReservasByMateria = () => {
         if (!materiaFilter) {
             setFilteredReservas(reservas);
@@ -345,60 +462,11 @@ const ReservasContainer = () => {
         setMateriaFilter('');
     };
 
-    const fetchPagosByTutor = async () => {
-        try {
-            const pagosResponse = await ApiService.fetchPagosByTutor();
-            if (pagosResponse.success) {
-                console.log("Pagos del tutor:", pagosResponse.data);
-                setReservaPagos(pagosResponse.data);
-            }
-        } catch (err) {
-            console.error("Error fetching pagos for tutor:", err);
-        }
+    const handleBack = () => {
+        navigate(-1);
     };
 
-    const fetchAllPagosAndCalificaciones = async () => {
-        try {
-            const pagosResponse = await ApiService.fetchPagosByEstudiante();
-            if (pagosResponse.success) {
-                setReservaPagos(pagosResponse.data);
-            }
-
-            const calificacionesResponse = await ApiService.getCalificacionesForEstudianteReservas();
-            if (calificacionesResponse.success) {
-                const reservasCalificadas = Object.keys(calificacionesResponse.data).map(id => parseInt(id));
-                console.log("Reservas calificadas:", reservasCalificadas);
-
-                setReservas(prevReservas => {
-                    const updatedReservas = prevReservas.map(reserva => {
-                        const isCalificada = reservasCalificadas.includes(reserva.id);
-                        return {
-                            ...reserva,
-                            calificado: isCalificada
-                        };
-                    });
-                    return updatedReservas;
-                });
-            }
-        } catch (err) {
-            console.error("Error fetching pagos and calificaciones:", err);
-        }
-    };
-
-    const fetchPagoByReserva = async (reservaId) => {
-        try {
-            const response = await ApiService.fetchPagoByReserva(reservaId);
-            if (response.success) {
-                setReservaPagos(prevState => ({
-                    ...prevState,
-                    [reservaId]: response.data
-                }));
-            }
-        } catch (err) {
-            console.error(`Error fetching pago for reserva ${reservaId}:`, err);
-        }
-    };
-
+    // Reserva action handlers
     const handleCancelReserva = async (id) => {
         await handleReservaAction(id, 'cancelar');
     };
@@ -453,7 +521,7 @@ const ReservasContainer = () => {
             setIsLoading(false);
         }
     };
-
+    // Payment handlers
     const handlePaymentModal = (reserva) => {
         setCurrentReserva(reserva);
         setShowPaymentModal(true);
@@ -516,6 +584,7 @@ const ReservasContainer = () => {
         }
     };
 
+    // Rating handlers
     const handleOpenRatingModal = (reserva) => {
         setReservaToRate(reserva);
         setShowCalificacionModal(true);
@@ -546,7 +615,6 @@ const ReservasContainer = () => {
                     )
                 );
 
-                console.log(`Reserva ${reservaToRate.id} marcada como calificada`);
                 reservaToRate.calificado = true;
             } else {
                 throw new Error(response.message || 'Error enviando calificación');
@@ -560,9 +628,9 @@ const ReservasContainer = () => {
         }
     };
 
+    // Video call handlers
     const startVideoCall = (reserva) => {
-        // Validar si puede iniciar la clase
-        /*if (!reserva.canStartClass && activeTab === 'tutor') {
+        if (!reserva.canStartClass && activeTab === 'tutor') {
             const timeUntil = reserva.timeUntilClass;
             if (timeUntil) {
                 setError(`No puedes iniciar la clase aún. Faltan ${timeUntil} para que puedas acceder.`);
@@ -572,7 +640,7 @@ const ReservasContainer = () => {
                 return;
             }
         }
-*/
+
         if (!reserva.sala_virtual) {
             setError("No hay sala virtual disponible para esta reserva.");
             return;
@@ -596,81 +664,7 @@ const ReservasContainer = () => {
         }, 300);
     };
 
-    const handleBack = () => {
-        navigate(-1);
-    };
-
-    // Funciones de validación de acciones actualizadas
-    const canCancelReserva = (reserva) => {
-        const actualStatus = reserva.actualStatus || reserva.estado;
-
-        if (actualStatus !== 'pendiente' && actualStatus !== 'confirmada') {
-            return false;
-        }
-
-        if (actualStatus === 'expirada') {
-            return false;
-        }
-
-        const reservaDateTime = new Date(`${reserva.fecha}T${reserva.hora_inicio}`);
-        const now = new Date();
-        const hoursBeforeLimit = 2;
-        const limitTime = new Date(reservaDateTime.getTime() - (hoursBeforeLimit * 60 * 60 * 1000));
-
-        return now < limitTime;
-    };
-
-    const canConfirmReserva = (reserva) => {
-        const actualStatus = reserva.actualStatus || reserva.estado;
-        return activeTab === 'tutor' && actualStatus === 'pendiente' && !reserva.isExpired;
-    };
-
-    const canCompleteReserva = (reserva) => {
-        const actualStatus = reserva.actualStatus || reserva.estado;
-        return activeTab === 'tutor' && actualStatus === 'confirmada' && !reserva.isExpired;
-    };
-
-    const canPayReserva = (reserva) => {
-        if (activeTab !== 'estudiante' || reserva.estado !== 'completada') {
-            return false;
-        }
-        const pago = reservaPagos[reserva.id];
-        if (pago && pago.estado === 'completado') {
-            return false;
-        }
-
-        return true;
-    };
-
-    const canConfirmEfectivoPago = (reserva) => {
-        if (activeTab !== 'tutor' || reserva.estado !== 'completada') {
-            return false;
-        }
-
-        const pago = reservaPagos[reserva.id];
-        return pago && pago.metodo_pago === 'efectivo' && pago.estado === 'pendiente';
-    };
-
-    const canRateReserva = (reserva) => {
-        if (activeTab !== 'estudiante' || reserva.estado !== 'completada') {
-            return false;
-        }
-
-        const pago = reservaPagos[reserva.id];
-        if (!pago || pago.estado !== 'completado') {
-            return false;
-        }
-
-        return reserva.calificado !== true;
-    };
-
-    const isPastReserva = (reserva) => {
-        const reservaDateTime = new Date(`${reserva.fecha}T${reserva.hora_fin}`);
-        const now = new Date();
-        return now > reservaDateTime;
-    };
-
-    // Procesar reservas con validaciones
+    // Process reservations with validations
     const processedReservas = useMemo(() => {
         return processReservasWithValidations(filteredReservas);
     }, [filteredReservas, reservaPagos, activeTab]);
@@ -734,7 +728,7 @@ const ReservasContainer = () => {
                         </div>
                     )}
 
-                    {/* Filtros de fecha */}
+                    {/* Date filters */}
                     <DateRangeFilter
                         fechaDesde={fechaDesde}
                         setFechaDesde={setFechaDesde}
@@ -744,7 +738,7 @@ const ReservasContainer = () => {
                         resetDateRange={resetDateRange}
                     />
 
-                    {/* Filtro de materia */}
+                    {/* Subject filter */}
                     <div className="mb-4">
                         <div className="row g-2">
                             <div className="col-12 col-md-6 col-lg-4">
@@ -797,7 +791,7 @@ const ReservasContainer = () => {
                                             reserva={reserva}
                                             activeTab={activeTab}
                                             reservaPagos={reservaPagos}
-                                            reservaActions={reservaActions} // NEW: Pass actions
+                                            reservaActions={reservaActions}
                                             isPastReserva={isPastReserva(reserva)}
                                             canCancelReserva={canCancelReserva(reserva)}
                                             canConfirmReserva={canConfirmReserva(reserva)}
@@ -817,7 +811,7 @@ const ReservasContainer = () => {
                                             handleOpenRatingModal={handleOpenRatingModal}
                                             startVideoCall={startVideoCall}
                                         />
-                                        ))}
+                                    ))}
                                 </div>
                             ) : (
                                 <div className="empty-state">
@@ -881,7 +875,7 @@ const ReservasContainer = () => {
                                 Las calificaciones de los estudiantes afectan tu puntuación promedio visible en tu perfil.
                             </div>
                             <div className="mt-1 text-warning">
-                                <strong>Importante:</strong> Las reservas que pasen su fecha límite sin confirmarse se marcarán automáticamente como no realizadas.
+                                <strong>Importante:</strong> Solo puedes completar una reserva después de que haya terminado el horario programado.
                             </div>
                         </div>
                     )}

@@ -1,4 +1,4 @@
-// Updated ReservaCard.jsx with actions tracking
+// Updated ReservaCard.jsx with actions tracking - PRODUCTION VERSION
 
 import React from 'react';
 
@@ -6,7 +6,7 @@ const ReservaCard = ({
                          reserva,
                          activeTab,
                          reservaPagos,
-                         reservaActions, // New prop for actions
+                         reservaActions,
                          isPastReserva,
                          canCancelReserva,
                          canConfirmReserva,
@@ -24,8 +24,7 @@ const ReservaCard = ({
                          handlePaymentModal,
                          handleConfirmEfectivoPago,
                          handleOpenRatingModal,
-                         startVideoCall,
-                         recordVideoCallAction // New prop for recording action
+                         startVideoCall
                      }) => {
     const formatDateTime = (date, time) => {
         const formattedDate = new Date(date).toLocaleDateString('es-AR', {
@@ -128,10 +127,6 @@ const ReservaCard = ({
     };
 
     const getClassTimeInfo = (reserva) => {
-        // HARDCODED FOR TESTING - Don't show time restrictions
-        return null;
-
-        /* UNCOMMENT WHEN READY FOR PRODUCTION:
         if (activeTab !== 'tutor' || reserva.estado !== 'confirmada') return null;
 
         if (reserva.canStartClass) {
@@ -162,10 +157,9 @@ const ReservaCard = ({
         }
 
         return null;
-        */
     };
 
-    // New function to render video call actions tracking
+    // Function to render video call actions tracking
     const getVideoCallActionsInfo = () => {
         if (!reservaActions || !shouldShowVideoCallButton(reserva)) return null;
 
@@ -231,37 +225,40 @@ const ReservaCard = ({
             return false;
         }
 
-        // FOR TESTING - Always show button for confirmed reservas (no time restrictions)
-        return reserva.estado === 'confirmada';
+        if (activeTab === 'estudiante' && reserva.estado === 'confirmada') {
+            return true;
+        }
+
+        if (activeTab === 'tutor' && reserva.estado === 'confirmada') {
+            return reserva.canStartClass || !reserva.isExpired;
+        }
+
+        return false;
     };
 
     const getVideoCallButtonText = (reserva) => {
-        // FOR TESTING - Always show simple text
+        if (activeTab === 'tutor') {
+            if (reserva.canStartClass) {
+                return "Iniciar Clase";
+            } else if (reserva.timeUntilClass) {
+                return `Disponible en ${reserva.timeUntilClass}`;
+            }
+        }
+        if (activeTab === 'estudiante') {
+            if (reserva.timeUntilClass) {
+                return `Disponible en ${reserva.timeUntilClass}`;
+            }
+        }
         return "Acceder a Videollamada";
     };
 
     const isVideoCallButtonDisabled = (reserva) => {
-        // FOR TESTING - Never disable the button
-        return false;
+        return (activeTab === 'tutor' || activeTab === 'estudiante') && !reserva.canStartClass && !reserva.isExpired;
     };
 
-    // Enhanced startVideoCall function that records the action - REAL VERSION FOR TESTING
-    const handleStartVideoCall = async (reserva) => {
-        try {
-            // Record the action before starting the video call - REAL API CALL
-            if (recordVideoCallAction) {
-                console.log(`Recording video call action for reserva ${reserva.id} by ${activeTab}`);
-                await recordVideoCallAction(reserva.id);
-                console.log(`✅ Action recorded successfully for reserva ${reserva.id}`);
-            }
-
-            // Then start the video call
-            startVideoCall(reserva);
-        } catch (error) {
-            console.error('❌ Error recording video call action:', error);
-            // Still start the video call even if recording fails
-            startVideoCall(reserva);
-        }
+    // Simple function to open modal - Action recording happens in modal
+    const handleStartVideoCall = (reserva) => {
+        startVideoCall(reserva);
     };
 
     return (
