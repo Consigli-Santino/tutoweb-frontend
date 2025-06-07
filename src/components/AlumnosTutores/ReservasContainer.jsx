@@ -34,6 +34,9 @@ const ReservasContainer = () => {
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
 
+    // NEW: State for reserva actions
+    const [reservaActions, setReservaActions] = useState({});
+
     // Confirmation states
     const [confirmActionId, setConfirmActionId] = useState(null);
     const [actionType, setActionType] = useState(null);
@@ -63,7 +66,7 @@ const ReservasContainer = () => {
     const [showCalificacionModal, setShowCalificacionModal] = useState(false);
     const [reservaToRate, setReservaToRate] = useState(null);
 
-    // Nuevas funciones de validación
+    // Funciones de validación existentes
     const isReservaExpired = (reserva) => {
         const reservaDateTime = new Date(`${reserva.fecha}T${reserva.hora_fin}`);
         const now = new Date();
@@ -72,12 +75,9 @@ const ReservasContainer = () => {
 
     const getReservaStatus = (reserva, pago = null) => {
         const isExpired = isReservaExpired(reserva);
-
-        // Si la reserva ya pasó y no está completada, considerarla como "expirada"
         if (isExpired && (reserva.estado === 'pendiente' || reserva.estado === 'confirmada')) {
             return 'expirada';
         }
-
         return reserva.estado;
     };
 
@@ -88,7 +88,6 @@ const ReservasContainer = () => {
         const now = new Date();
         const daysDiff = Math.floor((now - reservaDate) / (1000 * 60 * 60 * 24));
 
-        // Si no hay pago o está pendiente y han pasado más de 3 días
         if ((!pago || pago.estado === 'pendiente') && daysDiff > 3) {
             return {
                 type: 'danger',
@@ -96,7 +95,6 @@ const ReservasContainer = () => {
             };
         }
 
-        // Si no hay pago o está pendiente y han pasado 1-3 días
         if ((!pago || pago.estado === 'pendiente') && daysDiff >= 1) {
             return {
                 type: 'warning',
@@ -121,7 +119,6 @@ const ReservasContainer = () => {
         const endTime = new Date(reservaDate);
         endTime.setHours(parseInt(horaFin), 0, 0, 0);
 
-        // Permitir acceso 15 minutos antes y hasta el final de la clase
         const allowStartTime = new Date(startTime.getTime() - 15 * 60 * 1000);
 
         return now >= allowStartTime && now <= endTime;
@@ -147,6 +144,47 @@ const ReservasContainer = () => {
             return `${hours}h ${minutes}m`;
         }
         return `${minutes}m`;
+    };
+
+    // NEW: Function to fetch reserva actions
+    const fetchReservaActions = async (reservaIds) => {
+        if (!reservaIds || reservaIds.length === 0) {
+            setReservaActions({});
+            return;
+        }
+
+        try {
+            const response = await ApiService.getReservasActions(reservaIds);
+            if (response.success) {
+                // Convert array to object keyed by reserva_id
+                const actionsMap = {};
+                response.data.forEach(action => {
+                    actionsMap[action.reserva_id] = action;
+                });
+                setReservaActions(actionsMap);
+            }
+        } catch (err) {
+            console.error("Error fetching reserva actions:", err);
+            setReservaActions({});
+        }
+    };
+
+    // NEW: Function to record video call action
+    const recordVideoCallAction = async (reservaId) => {
+        try {
+            const response = await ApiService.recordVideoCallAction(reservaId);
+            if (response.success) {
+                // Update local state
+                setReservaActions(prev => ({
+                    ...prev,
+                    [reservaId]: response.data
+                }));
+                return response.data;
+            }
+        } catch (err) {
+            console.error("Error recording video call action:", err);
+            throw err;
+        }
     };
 
     // Aplicar validaciones a las reservas
@@ -176,6 +214,14 @@ const ReservasContainer = () => {
     useEffect(() => {
         filterReservasByMateria();
     }, [reservas, materiaFilter]);
+
+    // NEW: Effect to fetch actions when reservas change
+    useEffect(() => {
+        if (reservas.length > 0) {
+            const reservaIds = reservas.map(r => r.id);
+            fetchReservaActions(reservaIds);
+        }
+    }, [reservas]);
 
     useEffect(() => {
         const paymentStatus = searchParams.get('payment_status');
@@ -749,6 +795,7 @@ const ReservasContainer = () => {
                                             reserva={reserva}
                                             activeTab={activeTab}
                                             reservaPagos={reservaPagos}
+                                            reservaActions={reservaActions} // NEW: Pass actions
                                             isPastReserva={isPastReserva(reserva)}
                                             canCancelReserva={canCancelReserva(reserva)}
                                             canConfirmReserva={canConfirmReserva(reserva)}
@@ -767,6 +814,7 @@ const ReservasContainer = () => {
                                             handleConfirmEfectivoPago={handleConfirmEfectivoPago}
                                             handleOpenRatingModal={handleOpenRatingModal}
                                             startVideoCall={startVideoCall}
+                                            recordVideoCallAction={recordVideoCallAction} // NEW: Pass function
                                         />
                                     ))}
                                 </div>

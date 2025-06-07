@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import apiService from "../services/ApiService.js";
 
 const JitsiMeetRoom = ({ roomUrl, displayName, onClose }) => {
     const [hasOpenedCall, setHasOpenedCall] = useState(false);
@@ -10,6 +11,7 @@ const JitsiMeetRoom = ({ roomUrl, displayName, onClose }) => {
 
     // Función para abrir la videollamada en una nueva pestaña
     const openVideoCall = () => {
+
         const url = getFullUrl(roomUrl);
         window.open(url, '_blank');
         setHasOpenedCall(true);
