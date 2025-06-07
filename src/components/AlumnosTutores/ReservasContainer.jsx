@@ -146,7 +146,7 @@ const ReservasContainer = () => {
         return `${minutes}m`;
     };
 
-    // NEW: Function to fetch reserva actions
+    // Function to fetch reserva actions
     const fetchReservaActions = async (reservaIds) => {
         if (!reservaIds || reservaIds.length === 0) {
             setReservaActions({});
@@ -169,7 +169,7 @@ const ReservasContainer = () => {
         }
     };
 
-    // NEW: Function to record video call action
+    // Function to record video call action
     const recordVideoCallAction = async (reservaId) => {
         try {
             const response = await ApiService.recordVideoCallAction(reservaId);
@@ -180,6 +180,8 @@ const ReservasContainer = () => {
                     [reservaId]: response.data
                 }));
                 return response.data;
+            } else {
+                throw new Error(response.message);
             }
         } catch (err) {
             console.error("Error recording video call action:", err);
@@ -560,7 +562,7 @@ const ReservasContainer = () => {
 
     const startVideoCall = (reserva) => {
         // Validar si puede iniciar la clase
-        if (!reserva.canStartClass && activeTab === 'tutor') {
+        /*if (!reserva.canStartClass && activeTab === 'tutor') {
             const timeUntil = reserva.timeUntilClass;
             if (timeUntil) {
                 setError(`No puedes iniciar la clase aún. Faltan ${timeUntil} para que puedas acceder.`);
@@ -570,7 +572,7 @@ const ReservasContainer = () => {
                 return;
             }
         }
-
+*/
         if (!reserva.sala_virtual) {
             setError("No hay sala virtual disponible para esta reserva.");
             return;
@@ -814,9 +816,8 @@ const ReservasContainer = () => {
                                             handleConfirmEfectivoPago={handleConfirmEfectivoPago}
                                             handleOpenRatingModal={handleOpenRatingModal}
                                             startVideoCall={startVideoCall}
-                                            recordVideoCallAction={recordVideoCallAction} // NEW: Pass function
                                         />
-                                    ))}
+                                        ))}
                                 </div>
                             ) : (
                                 <div className="empty-state">
@@ -899,6 +900,8 @@ const ReservasContainer = () => {
                     roomUrl={activeJitsiRoom}
                     reserva={activeReserva}
                     user={user}
+                    activeTab={activeTab}
+                    recordVideoCallAction={recordVideoCallAction}
                     onClose={closeVideoCall}
                 />
             )}
