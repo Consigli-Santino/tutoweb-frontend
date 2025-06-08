@@ -1,7 +1,7 @@
 import React from 'react';
 import JitsiMeetRoom from '../../JitsiMeetRom/JitsiMeetRoom.jsx';
 
-const VideoCallModal = ({ showModal, roomUrl, reserva, user, onClose }) => {
+const VideoCallModal = ({ showModal, roomUrl, reserva, user, activeTab, recordVideoCallAction, onClose }) => {
     if (!showModal || !roomUrl || !reserva) return null;
 
     return (
@@ -28,6 +28,9 @@ const VideoCallModal = ({ showModal, roomUrl, reserva, user, onClose }) => {
                         <JitsiMeetRoom
                             roomUrl={roomUrl}
                             displayName={`${user.nombre} ${user.apellido}`}
+                            reserva={reserva}
+                            activeTab={activeTab}
+                            recordVideoCallAction={recordVideoCallAction}
                             onClose={onClose}
                         />
                     </div>

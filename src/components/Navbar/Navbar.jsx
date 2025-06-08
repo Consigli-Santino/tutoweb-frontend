@@ -12,18 +12,14 @@ const Navbar = ({ userOptions = [] }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const sidebarRef = useRef(null);
 
-    // Estados para notificaciones
     const [notifications, setNotifications] = useState([]);
     const [showNotifications, setShowNotifications] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isLoadingNotifications, setIsLoadingNotifications] = useState(false);
     const notificationsRef = useRef(null);
 
-    // Cargar notificaciones al montar y cada 60 segundos
     useEffect(() => {
         fetchNotifications();
-
-        // Actualizar las notificaciones cada minuto
         const interval = setInterval(() => {
             fetchNotifications();
         }, 60000);
@@ -31,7 +27,6 @@ const Navbar = ({ userOptions = [] }) => {
         return () => clearInterval(interval);
     }, []);
 
-    // Detectar clics fuera del menú de notificaciones
     useEffect(() => {
         function handleClickOutside(event) {
             if (notificationsRef.current && !notificationsRef.current.contains(event.target) &&
@@ -46,7 +41,6 @@ const Navbar = ({ userOptions = [] }) => {
         };
     }, [notificationsRef]);
 
-    // Detectar clics fuera del sidebar
     useEffect(() => {
         function handleClickOutside(event) {
             if (sidebarRef.current && !sidebarRef.current.contains(event.target) &&

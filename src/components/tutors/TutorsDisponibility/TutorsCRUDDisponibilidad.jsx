@@ -72,6 +72,19 @@ const TutorsCRUDDisponibilidad = () => {
         });
     };
 
+
+    const calcularDiferenciaHoras = (horaInicio, horaFin) => {
+        if (!horaInicio || !horaFin) return 0;
+
+        const [horaI, minI] = horaInicio.split(':').map(Number);
+        const [horaF, minF] = horaFin.split(':').map(Number);
+
+        const minutosInicio = horaI * 60 + minI;
+        const minutosFin = horaF * 60 + minF;
+
+        return (minutosFin - minutosInicio) / 60;
+    };
+
     const handleAddDisponibilidad = async () => {
         // Validar formulario
         if (!newDisponibilidad.dia_semana || !newDisponibilidad.hora_inicio || !newDisponibilidad.hora_fin) {
@@ -82,6 +95,13 @@ const TutorsCRUDDisponibilidad = () => {
         // Validar que hora_inicio < hora_fin
         if (newDisponibilidad.hora_inicio >= newDisponibilidad.hora_fin) {
             setError("La hora de inicio debe ser anterior a la hora de fin");
+            return;
+        }
+
+        // Validar diferencia máxima de 2 horas
+        const diferenciaHoras = calcularDiferenciaHoras(newDisponibilidad.hora_inicio, newDisponibilidad.hora_fin);
+        if (diferenciaHoras > 2) {
+            setError("La diferencia máxima entre hora de inicio y fin debe ser de 2 horas");
             return;
         }
 

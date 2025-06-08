@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import apiService from "../services/ApiService.js";
 
-const JitsiMeetRoom = ({ roomUrl, displayName, onClose }) => {
+const JitsiMeetRoom = ({ roomUrl, displayName, reserva, activeTab, recordVideoCallAction, onClose }) => {
     const [hasOpenedCall, setHasOpenedCall] = useState(false);
+    const [isRecordingAction, setIsRecordingAction] = useState(false);
 
     // Asegurar URL completa
     const getFullUrl = (url) => {
@@ -9,7 +11,21 @@ const JitsiMeetRoom = ({ roomUrl, displayName, onClose }) => {
     };
 
     // Función para abrir la videollamada en una nueva pestaña
-    const openVideoCall = () => {
+    const openVideoCall = async () => {
+        // Si es la primera vez y tenemos la función de registro, registrar la acción
+        if (!hasOpenedCall && recordVideoCallAction && reserva) {
+            setIsRecordingAction(true);
+            try {
+                await recordVideoCallAction(reserva.id);
+                console.log(`Video call action recorded for reserva ${reserva.id}`);
+            } catch (error) {
+                console.error('Error recording video call action:', error);
+                // Continuar aunque falle el registro
+            } finally {
+                setIsRecordingAction(false);
+            }
+        }
+
         const url = getFullUrl(roomUrl);
         window.open(url, '_blank');
         setHasOpenedCall(true);
@@ -27,6 +43,26 @@ const JitsiMeetRoom = ({ roomUrl, displayName, onClose }) => {
 
                         <h4 className="mb-3">Sala de videollamada lista</h4>
 
+                        {/* Información de la reserva si está disponible */}
+                        {reserva && (
+                            <div className="mb-3">
+                                <p className="text-muted">
+                                    {reserva.materia?.nombre && `${reserva.materia.nombre} - `}
+                                    {new Date(reserva.fecha).toLocaleDateString('es-AR')} a las {reserva.hora_inicio}
+                                </p>
+                                {activeTab === 'estudiante' && reserva.tutor && (
+                                    <p className="text-muted">
+                                        Tutor: {reserva.tutor.nombre} {reserva.tutor.apellido}
+                                    </p>
+                                )}
+                                {activeTab === 'tutor' && reserva.estudiante && (
+                                    <p className="text-muted">
+                                        Estudiante: {reserva.estudiante.nombre} {reserva.estudiante.apellido}
+                                    </p>
+                                )}
+                            </div>
+                        )}
+
                         <p className="mb-4">
                             La videollamada se abrirá en una nueva pestaña. Puedes mantener ambas pestañas abiertas.
                         </p>
@@ -35,14 +71,25 @@ const JitsiMeetRoom = ({ roomUrl, displayName, onClose }) => {
                             <button
                                 onClick={openVideoCall}
                                 className="btn btn-primary btn-lg"
+                                disabled={isRecordingAction}
                             >
-                                <i className="bi bi-camera-video-fill me-2"></i>
-                                Iniciar videollamada
+                                {isRecordingAction ? (
+                                    <>
+                                        <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                        Conectando...
+                                    </>
+                                ) : (
+                                    <>
+                                        <i className="bi bi-camera-video-fill me-2"></i>
+                                        Iniciar videollamada
+                                    </>
+                                )}
                             </button>
 
                             <button
                                 className="btn btn-outline-secondary"
                                 onClick={onClose}
+                                disabled={isRecordingAction}
                             >
                                 Cancelar
                             </button>

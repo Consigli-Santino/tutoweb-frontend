@@ -75,6 +75,9 @@ class ApiService {
 
         return ApiService.fetchApi(endpoint);
     }
+    static async getNextReservaTime() {
+        return ApiService.fetchApi('/next/reserva/time');
+    }
 
     static getCalificacionesUltimosDias(dias = 60, usuarioId = null) {
         const fechaHasta = new Date().toISOString().split('T')[0];
@@ -121,6 +124,14 @@ class ApiService {
         return ApiService.fetchApi('/calificaciones/estudiante');
     }
 
+    static async getReservasActions(reservaIds) {
+        const body = { reserva_ids: reservaIds };
+        return ApiService.fetchApi('/reservas/actions', 'POST', body);
+    }
+
+    static async recordVideoCallAction(reservaId) {
+        return ApiService.fetchApi(`/reservas/estudiante/actions?id_reserva=${reservaId}`, 'POST');
+    }
     static async getRoles() {
         return ApiService.fetchApi('/roles/all');
     }
@@ -296,7 +307,7 @@ class ApiService {
     }
 
     static getCalificacionesForEstudianteReservas() {
-        return ApiService.fetchApi('/calificaciones/estudiante/reservas');
+        return ApiService.fetchApi('/calificaciones/estudiante/reserva');
     }
 
     static async fetchPagosByReservas(idsReservas) {

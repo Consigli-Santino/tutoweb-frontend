@@ -217,6 +217,10 @@ const TutorProfile = () => {
                 throw new Error(response.message || 'Error al crear la reserva');
             }
         } catch (err) {
+            if(err.response && err.response.status === 409) {
+                setError('Debes pagar tus reservas para seguir reservando');
+                return;
+            }
             setError(`Error al crear reserva: ${err.message}`);
         } finally {
             setIsLoading(false);

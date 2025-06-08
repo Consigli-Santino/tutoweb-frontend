@@ -1,9 +1,12 @@
+// Updated ReservaCard.jsx with actions tracking - PRODUCTION VERSION
+
 import React from 'react';
 
 const ReservaCard = ({
                          reserva,
                          activeTab,
                          reservaPagos,
+                         reservaActions,
                          isPastReserva,
                          canCancelReserva,
                          canConfirmReserva,
@@ -156,6 +159,65 @@ const ReservaCard = ({
         return null;
     };
 
+    // Function to render video call actions tracking
+    const getVideoCallActionsInfo = () => {
+        if (!reservaActions || !shouldShowVideoCallButton(reserva)) return null;
+
+        const action = reservaActions[reserva.id];
+        if (!action) return null;
+
+        return (
+            <div className="mt-2 p-2 bg-light rounded-2 border">
+                <div className="d-flex align-items-center mb-1">
+                    <i className="bi bi-eye me-2 text-primary"></i>
+                    <span className="fw-bold small text-muted">Acceso a videollamada:</span>
+                </div>
+                <div className="d-flex flex-wrap gap-2">
+                    {action.estudiante_opened && (
+                        <span className="badge bg-success d-flex align-items-center">
+                            <i className="bi bi-person-check me-1"></i>
+                            Estudiante conectado
+                        </span>
+                    )}
+                    {action.tutor_opened && (
+                        <span className="badge bg-info d-flex align-items-center">
+                            <i className="bi bi-mortarboard me-1"></i>
+                            Tutor conectado
+                        </span>
+                    )}
+                    {!action.estudiante_opened && !action.tutor_opened && (
+                        <span className="badge bg-secondary d-flex align-items-center">
+                            <i className="bi bi-clock me-1"></i>
+                            Esperando conexiones
+                        </span>
+                    )}
+                </div>
+
+                {/* Show who's missing if only one connected */}
+                {(action.estudiante_opened && !action.tutor_opened) && (
+                    <div className="mt-1">
+                        <small className="text-muted">Esperando al tutor...</small>
+                    </div>
+                )}
+                {(action.tutor_opened && !action.estudiante_opened) && (
+                    <div className="mt-1">
+                        <small className="text-muted">Esperando al estudiante...</small>
+                    </div>
+                )}
+
+                {/* Show success message when both connected */}
+                {action.estudiante_opened && action.tutor_opened && (
+                    <div className="mt-1">
+                        <small className="text-success fw-bold">
+                            <i className="bi bi-check-circle me-1"></i>
+                            ¡Ambos participantes se conectaron!
+                        </small>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     const shouldShowVideoCallButton = (reserva) => {
         if (!reserva.servicio ||
             (reserva.servicio.modalidad !== 'virtual' && reserva.servicio.modalidad !== 'ambas') ||
@@ -163,12 +225,10 @@ const ReservaCard = ({
             return false;
         }
 
-        // Para estudiantes, mostrar siempre si está confirmada
         if (activeTab === 'estudiante' && reserva.estado === 'confirmada') {
             return true;
         }
 
-        // Para tutores, solo mostrar si pueden iniciar la clase
         if (activeTab === 'tutor' && reserva.estado === 'confirmada') {
             return reserva.canStartClass || !reserva.isExpired;
         }
@@ -184,11 +244,21 @@ const ReservaCard = ({
                 return `Disponible en ${reserva.timeUntilClass}`;
             }
         }
+        if (activeTab === 'estudiante') {
+            if (reserva.timeUntilClass) {
+                return `Disponible en ${reserva.timeUntilClass}`;
+            }
+        }
         return "Acceder a Videollamada";
     };
 
     const isVideoCallButtonDisabled = (reserva) => {
-        return activeTab === 'tutor' && !reserva.canStartClass && !reserva.isExpired;
+        return (activeTab === 'tutor' || activeTab === 'estudiante') && !reserva.canStartClass && !reserva.isExpired;
+    };
+
+    // Simple function to open modal - Action recording happens in modal
+    const handleStartVideoCall = (reserva) => {
+        startVideoCall(reserva);
     };
 
     return (
@@ -489,28 +559,18 @@ const ReservaCard = ({
                     {shouldShowVideoCallButton(reserva) && (
                         <div className="d-flex align-items-center mb-2">
                             <i className="bi bi-camera-video me-2 text-primary"></i>
-                            <div className="sala-virtual-container">
+                            <div className="sala-virtual-container w-100">
                                 <span>Sala Virtual: </span>
                                 <div className="mt-1">
                                     <button
                                         className={`btn btn-sm ${isVideoCallButtonDisabled(reserva) ? 'btn-outline-secondary' : 'btn-primary'} me-1`}
-                                        onClick={() => startVideoCall(reserva)}
+                                        onClick={() => handleStartVideoCall(reserva)}
                                         disabled={isVideoCallButtonDisabled(reserva)}
                                         title={isVideoCallButtonDisabled(reserva) ? "Aún no puedes acceder" : "Acceder a la videollamada"}
                                     >
                                         <i className="bi bi-camera-video-fill me-1"></i>
                                         {getVideoCallButtonText(reserva)}
                                     </button>
-
-                                    <a
-                                        href={reserva.sala_virtual}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="btn btn-sm btn-outline-secondary"
-                                        title="Abrir en nueva pestaña"
-                                    >
-                                        <i className="bi bi-box-arrow-up-right"></i>
-                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -525,6 +585,9 @@ const ReservaCard = ({
                                 <span className="text-muted">Sala pendiente de configuración</span>
                             </div>
                         )}
+
+                    {/* Video call actions tracking */}
+                    {getVideoCallActionsInfo()}
 
                     {/* Payment warning alert */}
                     {getPaymentWarningAlert(reserva.paymentWarning)}
