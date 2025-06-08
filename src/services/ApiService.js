@@ -75,6 +75,9 @@ class ApiService {
 
         return ApiService.fetchApi(endpoint);
     }
+    static async getNextReservaTime() {
+        return ApiService.fetchApi('/next/reserva/time');
+    }
 
     static getCalificacionesUltimosDias(dias = 60, usuarioId = null) {
         const fechaHasta = new Date().toISOString().split('T')[0];
