@@ -66,9 +66,37 @@ const ReservasContainer = () => {
     const [reservaToRate, setReservaToRate] = useState(null);
     // Validation functions
     const isReservaExpired = (reserva) => {
-        const reservaDateTime = new Date(`${reserva.fecha}T${reserva.hora_fin}`);
-        const now = new Date();
-        return now > reservaDateTime;
+        try {
+            // La hora_fin ya viene con formato HH:mm:ss, no agregar :00 extra
+            const reservaDateTimeString = `${reserva.fecha}T${reserva.hora_fin}`;
+            const reservaDateTime = new Date(reservaDateTimeString);
+
+            // Verificar si la fecha es válida
+            if (isNaN(reservaDateTime.getTime())) {
+                console.error('Invalid date created from:', reservaDateTimeString);
+                return false;
+            }
+
+            const now = new Date();
+
+            // Debug logging temporal
+            if (reserva.id === 1033 || reserva.id === 1043) {
+                console.log(`=== DEBUGGING RESERVA ${reserva.id} ===`);
+                console.log('Input fecha:', reserva.fecha);
+                console.log('Input hora_fin:', reserva.hora_fin);
+                console.log('DateTime string:', reservaDateTimeString);
+                console.log('Parsed reserva time:', reservaDateTime);
+                console.log('Current time:', now);
+                console.log('Now > ReservaTime:', now > reservaDateTime);
+                console.log('Time difference (minutes):', (now.getTime() - reservaDateTime.getTime()) / (1000 * 60));
+                console.log('===========================');
+            }
+
+            return now > reservaDateTime;
+        } catch (error) {
+            console.error('Error checking if reserva is expired:', error);
+            return false;
+        }
     };
 
     const getReservaStatus = (reserva, pago = null) => {
@@ -103,9 +131,61 @@ const ReservasContainer = () => {
         return null;
     };
 
+
+    // FIX para canStartClass en ReservasContainer.jsx
+// Usar el MISMO método que getClassTimeInfo (parseando minutos correctamente)
+
     const canStartClass = (reserva) => {
         if (activeTab !== 'tutor' || reserva.estado !== 'confirmada') return false;
 
+        const now = new Date();
+        const [year, month, day] = reserva.fecha.split('-');
+
+        // FIX: Parsear hora Y minutos (igual que en getClassTimeInfo)
+        const [horaInicio, minutoInicio] = reserva.hora_inicio.split(':');
+        const [horaFin, minutoFin] = reserva.hora_fin.split(':');
+
+        const startTime = new Date(
+            parseInt(year),
+            parseInt(month) - 1,
+            parseInt(day),
+            parseInt(horaInicio),
+            parseInt(minutoInicio),
+            0
+        );
+
+        const endTime = new Date(
+            parseInt(year),
+            parseInt(month) - 1,
+            parseInt(day),
+            parseInt(horaFin),
+            parseInt(minutoFin),
+            0
+        );
+
+        const allowStartTime = new Date(startTime.getTime() - 15 * 60 * 1000);
+
+        // DEBUG LOGS para la reserva 1033
+        if (reserva.id === 1033) {
+            console.log('=== DEBUG canStartClass RESERVA 1033 (FINAL FIX) ===');
+            console.log('Input hora_inicio:', reserva.hora_inicio);
+            console.log('Input hora_fin:', reserva.hora_fin);
+            console.log('Parsed inicio:', { horaInicio, minutoInicio });
+            console.log('Parsed fin:', { horaFin, minutoFin });
+            console.log('Now:', now);
+            console.log('StartTime:', startTime);
+            console.log('EndTime:', endTime);
+            console.log('AllowStartTime:', allowStartTime);
+            console.log('now >= allowStartTime:', now >= allowStartTime);
+            console.log('now <= endTime:', now <= endTime);
+            console.log('Can start class:', now >= allowStartTime && now <= endTime);
+            console.log('===============================================');
+        }
+
+        return now >= allowStartTime && now <= endTime;
+    };
+
+    const getTimeUntilClass = (reserva) => {
         const now = new Date();
         const reservaDate = new Date(reserva.fecha);
         const [horaInicio] = reserva.hora_inicio.split(':');
@@ -118,30 +198,24 @@ const ReservasContainer = () => {
         endTime.setHours(parseInt(horaFin), 0, 0, 0);
 
         const allowStartTime = new Date(startTime.getTime() - 15 * 60 * 1000);
-
-        return now >= allowStartTime && now <= endTime;
-    };
-
-    const getTimeUntilClass = (reserva) => {
-        const now = new Date();
-        const reservaDate = new Date(reserva.fecha);
-        const [horaInicio] = reserva.hora_inicio.split(':');
-
-        const startTime = new Date(reservaDate);
-        startTime.setHours(parseInt(horaInicio), 0, 0, 0);
-
-        const allowStartTime = new Date(startTime.getTime() - 15 * 60 * 1000);
-        const timeDiff = allowStartTime - now;
-
-        if (timeDiff <= 0) return null;
-
-        const hours = Math.floor(timeDiff / (1000 * 60 * 60));
-        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-
-        if (hours > 0) {
-            return `${hours}h ${minutes}m`;
+        if (now > endTime) {
+            return null;
         }
-        return `${minutes}m`;
+        if (now >= allowStartTime && now <= endTime) {
+            return null; //
+        }
+        if (now < allowStartTime) {
+            const timeDiff = allowStartTime - now;
+            const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+            const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+
+            if (hours > 0) {
+                return `${hours}h ${minutes}m`;
+            }
+            return `${minutes}m`;
+        }
+
+        return null;
     };
 
     // Action validation functions

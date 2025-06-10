@@ -27,11 +27,8 @@ const ReservaCard = ({
                          startVideoCall
                      }) => {
     const formatDateTime = (date, time) => {
-        const formattedDate = new Date(date).toLocaleDateString('es-AR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        });
+        const [year, month, day] = date.split('-');
+        const formattedDate = `${day}/${month}/${year}`;
 
         return `${formattedDate} - ${time}`;
     };
@@ -129,11 +126,48 @@ const ReservaCard = ({
     const getClassTimeInfo = (reserva) => {
         if (activeTab !== 'tutor' || reserva.estado !== 'confirmada') return null;
 
-        if (reserva.canStartClass) {
+        const now = new Date();
+        const [year, month, day] = reserva.fecha.split('-');
+
+        // FIX: Parsear hora Y minutos
+        const [horaInicio, minutoInicio] = reserva.hora_inicio.split(':');
+        const [horaFin, minutoFin] = reserva.hora_fin.split(':');
+
+        const startTime = new Date(
+            parseInt(year),
+            parseInt(month) - 1,
+            parseInt(day),
+            parseInt(horaInicio),
+            parseInt(minutoInicio),
+            0
+        );
+
+        const endTime = new Date(
+            parseInt(year),
+            parseInt(month) - 1,
+            parseInt(day),
+            parseInt(horaFin),
+            parseInt(minutoFin),
+            0
+        );
+
+        const allowStartTime = new Date(startTime.getTime() - 15 * 60 * 1000);
+
+        if (now > endTime) {
+            return (
+                <div className="alert alert-secondary alert-sm mt-2 mb-0" role="alert">
+                    <i className="bi bi-clock-history me-1"></i>
+                    <small>Esta clase ya ha finalizado</small>
+                </div>
+            );
+        }
+
+        if (now >= allowStartTime && now <= endTime) {
+            const minutesUntilEnd = Math.floor((endTime - now) / (1000 * 60));
             return (
                 <div className="alert alert-success alert-sm mt-2 mb-0" role="alert">
                     <i className="bi bi-play-circle-fill me-1"></i>
-                    <small>¡Ya puedes iniciar la clase!</small>
+                    <small>¡Ya puedes iniciar la clase! (quedan {minutesUntilEnd} minutos)</small>
                 </div>
             );
         }
@@ -143,15 +177,6 @@ const ReservaCard = ({
                 <div className="alert alert-info alert-sm mt-2 mb-0" role="alert">
                     <i className="bi bi-clock me-1"></i>
                     <small>Podrás iniciar la clase en {reserva.timeUntilClass}</small>
-                </div>
-            );
-        }
-
-        if (reserva.isExpired) {
-            return (
-                <div className="alert alert-secondary alert-sm mt-2 mb-0" role="alert">
-                    <i className="bi bi-clock-history me-1"></i>
-                    <small>Esta clase ya ha finalizado</small>
                 </div>
             );
         }
@@ -237,24 +262,137 @@ const ReservaCard = ({
     };
 
     const getVideoCallButtonText = (reserva) => {
+        // Función helper para calcular tiempo hasta poder acceder
+        const getTimeUntilAccess = (reserva) => {
+            const now = new Date();
+            const [year, month, day] = reserva.fecha.split('-');
+            const [horaInicio] = reserva.hora_inicio.split(':');
+
+            const startTime = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(horaInicio), 0, 0);
+            const allowStartTime = new Date(startTime.getTime() - 15 * 60 * 1000);
+            const timeDiff = allowStartTime - now;
+
+            if (timeDiff <= 0) return null;
+
+            const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+            const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+
+            return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+        };
+
+        // Para tutores
         if (activeTab === 'tutor') {
             if (reserva.canStartClass) {
                 return "Iniciar Clase";
-            } else if (reserva.timeUntilClass) {
-                return `Disponible en ${reserva.timeUntilClass}`;
+            } else if (reserva.isExpired) {
+                return "Clase finalizada";
+            } else {
+                const timeUntil = getTimeUntilAccess(reserva);
+                return timeUntil ? `Disponible en ${timeUntil}` : "Aún no disponible";
             }
         }
+
+        // Para estudiantes
         if (activeTab === 'estudiante') {
-            if (reserva.timeUntilClass) {
-                return `Disponible en ${reserva.timeUntilClass}`;
+            if (reserva.isExpired) {
+                return "Clase finalizada";
+            } else {
+                const timeUntil = getTimeUntilAccess(reserva);
+                return timeUntil ? `Disponible en ${timeUntil}` : "Acceder a Videollamada";
             }
         }
+
         return "Acceder a Videollamada";
+    };
+    const getStudentVideoCallInfo = (reserva) => {
+        if (activeTab !== 'estudiante' || reserva.estado !== 'confirmada' || !shouldShowVideoCallButton(reserva)) {
+            return null;
+        }
+
+        const now = new Date();
+        const [year, month, day] = reserva.fecha.split('-');
+        const [horaInicio] = reserva.hora_inicio.split(':');
+        const [horaFin] = reserva.hora_fin.split(':');
+
+        const startTime = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(horaInicio), 0, 0);
+        const endTime = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(horaFin), 0, 0);
+        const allowStartTime = new Date(startTime.getTime() - 15 * 60 * 1000);
+
+        // Si puede acceder ahora
+        if (now >= allowStartTime && now <= endTime) {
+            const minutesUntilEnd = Math.floor((endTime - now) / (1000 * 60));
+            return (
+                <div className="alert alert-success alert-sm mt-2 mb-0" role="alert">
+                    <i className="bi bi-play-circle-fill me-1"></i>
+                    <small>¡Puedes acceder a la videollamada! (quedan {minutesUntilEnd} minutos)</small>
+                </div>
+            );
+        }
+
+        if (now < allowStartTime) {
+            const timeDiff = allowStartTime - now;
+            const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+            const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+            const timeText = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+
+            return (
+                <div className="alert alert-info alert-sm mt-2 mb-0" role="alert">
+                    <i className="bi bi-clock me-1"></i>
+                    <small>Podrás acceder a la videollamada en {timeText}</small>
+                </div>
+            );
+        }
+
+        return null;
     };
 
     const isVideoCallButtonDisabled = (reserva) => {
-        return (activeTab === 'tutor' || activeTab === 'estudiante') && !reserva.canStartClass && !reserva.isExpired;
+        // Función helper para calcular si puede acceder (FIXED para parsear minutos)
+        const canAccessVideoCall = (reserva) => {
+            const now = new Date();
+            const [year, month, day] = reserva.fecha.split('-');
+
+            // FIX: Parsear hora Y minutos (igual que las otras funciones)
+            const [horaInicio, minutoInicio] = reserva.hora_inicio.split(':');
+            const [horaFin, minutoFin] = reserva.hora_fin.split(':');
+
+            const startTime = new Date(
+                parseInt(year),
+                parseInt(month) - 1,
+                parseInt(day),
+                parseInt(horaInicio),
+                parseInt(minutoInicio),
+                0
+            );
+
+            const endTime = new Date(
+                parseInt(year),
+                parseInt(month) - 1,
+                parseInt(day),
+                parseInt(horaFin),
+                parseInt(minutoFin),
+                0
+            );
+
+            const allowStartTime = new Date(startTime.getTime() - 15 * 60 * 1000); // 15 min antes
+
+            return now >= allowStartTime && now <= endTime;
+        };
+
+        // Para estudiantes: misma lógica que tutores (15 min antes)
+        if (activeTab === 'estudiante') {
+            const canAccess = canAccessVideoCall(reserva);
+            return !canAccess; // Deshabilitar si NO puede acceder
+        }
+
+        // Para tutores: usar la lógica existente
+        if (activeTab === 'tutor') {
+            return !reserva.canStartClass && !reserva.isExpired;
+        }
+
+        return true; // Por defecto, deshabilitar
     };
+
 
     // Simple function to open modal - Action recording happens in modal
     const handleStartVideoCall = (reserva) => {
@@ -595,13 +733,7 @@ const ReservaCard = ({
                     {/* Class time info for tutors */}
                     {getClassTimeInfo(reserva)}
 
-                    {/* Reservation notes */}
-                    {reserva.notas && (
-                        <div className="mt-2">
-                            <h4 className="fs-6 fw-bold mb-1">Notas:</h4>
-                            <p className="materia-description">{reserva.notas}</p>
-                        </div>
-                    )}
+                    {getStudentVideoCallInfo(reserva)}
                 </div>
             </div>
         </div>

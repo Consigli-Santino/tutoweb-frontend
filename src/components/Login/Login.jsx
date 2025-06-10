@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import utnLogo from '../../assets/UTN_logo.jpg';
+import logo from '../../assets/d67bf100-ca44-453c-8737-aeffbe5d0c18.png';
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from '../../context/AuthContext';
 import './LoginButton.css';
@@ -78,7 +78,7 @@ const Login = () => {
                     <div className="card-header border-0 text-center p-4" style={{backgroundColor: '#283048'}}>
                         <div className="d-flex justify-content-center mb-3">
                             <div className="bg-white rounded-3 p-2" style={{width: '80px', height: '80px'}}>
-                                <img src={utnLogo} alt="Logo UTN" className="img-fluid" />
+                                <img src={logo} alt="Logo UTN" className="img-fluid" />
                             </div>
                         </div>
                         <div className="text-white fw-bold fs-4">TutoWeb</div>
