@@ -33,15 +33,29 @@ const ReservaCard = ({
         return `${formattedDate} - ${time}`;
     };
 
-    const getEstadoBadge = (estado, actualStatus = null, isExpired = false) => {
+    const getEstadoBadge = (estado, actualStatus = null, isExpired = false, reservaActions = null, reservaId = null) => {
         const status = actualStatus || estado;
 
+        // NUEVA LÓGICA: Si expiró y ambos se conectaron, mostrar "Clase realizada"
+        if (isExpired && estado === 'confirmada' && reservaActions && reservaActions[reservaId]) {
+            const action = reservaActions[reservaId];
+            if (action.tutor_opened && action.estudiante_opened) {
+                return (
+                    <span className="badge bg-success">
+                    <i className="bi bi-check-circle-fill me-1"></i>
+                    Clase realizada
+                </span>
+                );
+            }
+        }
+
+        // Si expiró pero NO ambos se conectaron
         if (status === 'expirada' || (isExpired && (estado === 'pendiente' || estado === 'confirmada'))) {
             return (
                 <span className="badge bg-secondary">
-                    <i className="bi bi-clock-history me-1"></i>
-                    No realizada
-                </span>
+                <i className="bi bi-clock-history me-1"></i>
+                No realizada
+            </span>
             );
         }
 
@@ -49,30 +63,30 @@ const ReservaCard = ({
             case 'pendiente':
                 return (
                     <span className="badge bg-warning text-dark">
-                        <i className="bi bi-hourglass me-1"></i>
-                        Pendiente
-                    </span>
+                    <i className="bi bi-hourglass me-1"></i>
+                    Pendiente
+                </span>
                 );
             case 'confirmada':
                 return (
                     <span className="badge bg-success">
-                        <i className="bi bi-check-circle me-1"></i>
-                        Confirmada
-                    </span>
+                    <i className="bi bi-check-circle me-1"></i>
+                    Confirmada
+                </span>
                 );
             case 'completada':
                 return (
                     <span className="badge bg-info">
-                        <i className="bi bi-check-square me-1"></i>
-                        Completada
-                    </span>
+                    <i className="bi bi-check-square me-1"></i>
+                    Completada
+                </span>
                 );
             case 'cancelada':
                 return (
                     <span className="badge bg-danger">
-                        <i className="bi bi-x-circle me-1"></i>
-                        Cancelada
-                    </span>
+                    <i className="bi bi-x-circle me-1"></i>
+                    Cancelada
+                </span>
                 );
             default:
                 return <span className="badge bg-secondary">Desconocido</span>;
@@ -128,8 +142,6 @@ const ReservaCard = ({
 
         const now = new Date();
         const [year, month, day] = reserva.fecha.split('-');
-
-        // FIX: Parsear hora Y minutos
         const [horaInicio, minutoInicio] = reserva.hora_inicio.split(':');
         const [horaFin, minutoFin] = reserva.hora_fin.split(':');
 
@@ -153,13 +165,24 @@ const ReservaCard = ({
 
         const allowStartTime = new Date(startTime.getTime() - 15 * 60 * 1000);
 
+        // NUEVA LÓGICA: Si terminó y ambos se conectaron
         if (now > endTime) {
-            return (
-                <div className="alert alert-secondary alert-sm mt-2 mb-0" role="alert">
-                    <i className="bi bi-clock-history me-1"></i>
-                    <small>Esta clase ya ha finalizado</small>
-                </div>
-            );
+            const action = reservaActions[reserva.id];
+            if (action && action.tutor_opened && action.estudiante_opened) {
+                return (
+                    <div className="alert alert-success alert-sm mt-2 mb-0" role="alert">
+                        <i className="bi bi-check-circle-fill me-1"></i>
+                        <small>¡Clase realizada exitosamente! Puedes marcarla como completada.</small>
+                    </div>
+                );
+            } else {
+                return (
+                    <div className="alert alert-secondary alert-sm mt-2 mb-0" role="alert">
+                        <i className="bi bi-clock-history me-1"></i>
+                        <small>Esta clase ya ha finalizado</small>
+                    </div>
+                );
+            }
         }
 
         if (now >= allowStartTime && now <= endTime) {
@@ -311,12 +334,45 @@ const ReservaCard = ({
 
         const now = new Date();
         const [year, month, day] = reserva.fecha.split('-');
-        const [horaInicio] = reserva.hora_inicio.split(':');
-        const [horaFin] = reserva.hora_fin.split(':');
 
-        const startTime = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(horaInicio), 0, 0);
-        const endTime = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(horaFin), 0, 0);
+        // FIX: Parsear hora Y minutos (igual que las otras funciones)
+        const [horaInicio, minutoInicio] = reserva.hora_inicio.split(':');
+        const [horaFin, minutoFin] = reserva.hora_fin.split(':');
+
+        const startTime = new Date(
+            parseInt(year),
+            parseInt(month) - 1,
+            parseInt(day),
+            parseInt(horaInicio),
+            parseInt(minutoInicio),  // ← FIX: Agregar minutos
+            0
+        );
+
+        const endTime = new Date(
+            parseInt(year),
+            parseInt(month) - 1,
+            parseInt(day),
+            parseInt(horaFin),
+            parseInt(minutoFin),     // ← FIX: Agregar minutos
+            0
+        );
+
         const allowStartTime = new Date(startTime.getTime() - 15 * 60 * 1000);
+
+        // DEBUG para reserva específica
+        if (reserva.id === 1034) { // Cambiar por el ID de la reserva actual
+            console.log('=== DEBUG getStudentVideoCallInfo ===');
+            console.log('Input hora_inicio:', reserva.hora_inicio);
+            console.log('Input hora_fin:', reserva.hora_fin);
+            console.log('Parsed inicio:', { horaInicio, minutoInicio });
+            console.log('Parsed fin:', { horaFin, minutoFin });
+            console.log('Now:', now);
+            console.log('StartTime:', startTime);
+            console.log('EndTime:', endTime);
+            console.log('AllowStartTime:', allowStartTime);
+            console.log('Minutes until end:', Math.floor((endTime - now) / (1000 * 60)));
+            console.log('======================================');
+        }
 
         // Si puede acceder ahora
         if (now >= allowStartTime && now <= endTime) {
@@ -347,7 +403,6 @@ const ReservaCard = ({
     };
 
     const isVideoCallButtonDisabled = (reserva) => {
-        // Función helper para calcular si puede acceder (FIXED para parsear minutos)
         const canAccessVideoCall = (reserva) => {
             const now = new Date();
             const [year, month, day] = reserva.fecha.split('-');
@@ -361,7 +416,7 @@ const ReservaCard = ({
                 parseInt(month) - 1,
                 parseInt(day),
                 parseInt(horaInicio),
-                parseInt(minutoInicio),
+                parseInt(minutoInicio),  // ← FIX: Agregar minutos
                 0
             );
 
@@ -370,19 +425,19 @@ const ReservaCard = ({
                 parseInt(month) - 1,
                 parseInt(day),
                 parseInt(horaFin),
-                parseInt(minutoFin),
+                parseInt(minutoFin),     // ← FIX: Agregar minutos
                 0
             );
 
-            const allowStartTime = new Date(startTime.getTime() - 15 * 60 * 1000); // 15 min antes
+            const allowStartTime = new Date(startTime.getTime() - 15 * 60 * 1000);
 
             return now >= allowStartTime && now <= endTime;
         };
 
-        // Para estudiantes: misma lógica que tutores (15 min antes)
+        // Para estudiantes: usar la lógica corregida
         if (activeTab === 'estudiante') {
             const canAccess = canAccessVideoCall(reserva);
-            return !canAccess; // Deshabilitar si NO puede acceder
+            return !canAccess;
         }
 
         // Para tutores: usar la lógica existente
@@ -390,7 +445,7 @@ const ReservaCard = ({
             return !reserva.canStartClass && !reserva.isExpired;
         }
 
-        return true; // Por defecto, deshabilitar
+        return true;
     };
 
 
@@ -408,7 +463,7 @@ const ReservaCard = ({
                             {reserva.materia?.nombre || `Tutoría #${reserva.id}`}
                         </h3>
                         <div className="mb-1">
-                            {getEstadoBadge(reserva.estado, reserva.actualStatus, reserva.isExpired)}
+                            {getEstadoBadge(reserva.estado, reserva.actualStatus, reserva.isExpired, reservaActions, reserva.id)}
 
                             {/* Payment status badge if completed */}
                             {reserva.estado === 'completada' && (

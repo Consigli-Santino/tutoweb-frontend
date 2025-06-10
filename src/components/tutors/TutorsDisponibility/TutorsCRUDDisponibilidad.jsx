@@ -31,9 +31,8 @@ const TutorsCRUDDisponibilidad = () => {
         { id: 7, nombre: "Domingo" }
     ];
 
-    // Generar horas desde 7:00 hasta 22:00
-    const horas = Array.from({ length: 31 }, (_, i) => {
-        const hora = 7 + Math.floor(i / 2);
+    const horas = Array.from({ length: 48 }, (_, i) => {
+        const hora = Math.floor(i / 2);
         const minutos = i % 2 === 0 ? "00" : "30";
         return {
             id: `${hora.toString().padStart(2, "0")}:${minutos}`,

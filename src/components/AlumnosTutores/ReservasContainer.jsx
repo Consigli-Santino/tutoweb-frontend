@@ -101,9 +101,10 @@ const ReservasContainer = () => {
 
     const getReservaStatus = (reserva, pago = null) => {
         const isExpired = isReservaExpired(reserva);
-        if (isExpired && (reserva.estado === 'pendiente' || reserva.estado === 'confirmada')) {
+        if (isExpired && reserva.estado === 'pendiente') {
             return 'expirada';
         }
+
         return reserva.estado;
     };
 
@@ -245,19 +246,69 @@ const ReservasContainer = () => {
 
     const canCompleteReserva = (reserva) => {
         const actualStatus = reserva.actualStatus || reserva.estado;
-        return activeTab === 'tutor' && actualStatus === 'confirmada' && reserva.isExpired;
-    };
+        const action = reservaActions[reserva.id];
 
-    const canPayReserva = (reserva) => {
-        if (activeTab !== 'estudiante' || reserva.estado !== 'completada') {
-            return false;
+        // DEBUG para reserva 1033
+        if (reserva.id === 1033) {
+            console.log('=== DEBUG canCompleteReserva RESERVA 1033 ===');
+            console.log('activeTab:', activeTab);
+            console.log('actualStatus:', actualStatus);
+            console.log('isExpired:', reserva.isExpired);
+            console.log('action:', action);
+            console.log('tutor_opened:', action?.tutor_opened);
+            console.log('estudiante_opened:', action?.estudiante_opened);
+            console.log('Can complete:', activeTab === 'tutor' && actualStatus === 'confirmada' && reserva.isExpired && action?.tutor_opened && action?.estudiante_opened);
+            console.log('============================================');
         }
-        const pago = reservaPagos[reserva.id];
-        if (pago && pago.estado === 'completado') {
+
+        // Solo tutores pueden completar
+        if (activeTab !== 'tutor') return false;
+
+        // Solo reservas confirmadas y expiradas
+        if (actualStatus !== 'confirmada' || !reserva.isExpired) return false;
+
+        // Verificar si ambos se conectaron a la videollamada
+        if (!action || !action.tutor_opened || !action.estudiante_opened) {
             return false;
         }
 
         return true;
+    };
+
+    const canPayReserva = (reserva) => {
+        const pago = reservaPagos[reserva.id];
+        const action = reservaActions[reserva.id];
+
+        // DEBUG para reserva 1033
+        if (reserva.id === 1033) {
+            console.log('=== DEBUG canPayReserva RESERVA 1033 ===');
+            console.log('activeTab:', activeTab);
+            console.log('estado:', reserva.estado);
+            console.log('isExpired:', reserva.isExpired);
+            console.log('action:', action);
+            console.log('tutor_opened:', action?.tutor_opened);
+            console.log('estudiante_opened:', action?.estudiante_opened);
+            console.log('pago:', pago);
+            console.log('Can pay (completada):', reserva.estado === 'completada' && (!pago || pago.estado !== 'completado'));
+            console.log('Can pay (expired+connected):', reserva.estado === 'confirmada' && reserva.isExpired && action?.tutor_opened && action?.estudiante_opened && (!pago || pago.estado !== 'completado'));
+            console.log('========================================');
+        }
+
+        if (activeTab !== 'estudiante') return false;
+
+        // Opción 1: Ya está completada (lógica actual)
+        if (reserva.estado === 'completada') {
+            return !pago || pago.estado !== 'completado';
+        }
+
+        // Opción 2: Clase terminada Y ambos se conectaron (NUEVA LÓGICA)
+        if (reserva.estado === 'confirmada' && reserva.isExpired) {
+            if (action && action.tutor_opened && action.estudiante_opened) {
+                return !pago || pago.estado !== 'completado';
+            }
+        }
+
+        return false;
     };
 
     const canConfirmEfectivoPago = (reserva) => {

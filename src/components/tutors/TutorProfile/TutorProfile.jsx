@@ -4,7 +4,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useEntidades } from '../../../context/EntidadesContext';
 import ApiService from '../../../services/ApiService';
 import DatePicker, { registerLocale } from 'react-datepicker';
-import { format, addDays } from 'date-fns';
+import { format, addDays, isAfter, isSameDay as isSameDayFns, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
 import 'react-datepicker/dist/react-datepicker.css';
 import '../../../commonTables.css';
@@ -111,40 +111,71 @@ const TutorProfile = () => {
         }
     };
 
+    // Función para verificar si una fecha específica tiene horarios disponibles considerando la hora actual
+    const verificarDisponibilidadFecha = async (fecha, disponibilidades) => {
+        const ahora = new Date();
+
+        // Si la fecha es anterior a hoy, no está disponible
+        if (startOfDay(fecha) < startOfDay(ahora)) {
+            return false;
+        }
+
+        // Si es hoy, verificar que haya horarios futuros disponibles
+        if (isSameDayFns(fecha, ahora)) {
+            // Verificar si alguna disponibilidad de este día tiene horarios futuros
+            const diaSemana = fecha.getDay() === 0 ? 7 : fecha.getDay();
+            const disponibilidadesDelDia = disponibilidades.filter(d => d.dia_semana === diaSemana);
+
+            if (disponibilidadesDelDia.length === 0) return false;
+
+            // Verificar si hay algún horario futuro (con margen de 1 hora)
+            const horaActual = ahora.getHours();
+            const minutosActuales = ahora.getMinutes();
+            const tiempoActualEnMinutos = horaActual * 60 + minutosActuales + 60; // +60 min de margen
+
+            for (const disp of disponibilidadesDelDia) {
+                const [horaInicio, minutosInicio] = disp.hora_inicio.split(':').map(Number);
+                const tiempoInicioEnMinutos = horaInicio * 60 + minutosInicio;
+
+                if (tiempoInicioEnMinutos > tiempoActualEnMinutos) {
+                    return true; // Hay al menos un horario futuro
+                }
+            }
+
+            return false; // No hay horarios futuros
+        }
+
+        // Si es una fecha futura, verificar si hay disponibilidad ese día
+        const diaSemana = fecha.getDay() === 0 ? 7 : fecha.getDay();
+        return disponibilidades.some(d => d.dia_semana === diaSemana);
+    };
+
     const calcularFechasDisponibles = async () => {
         if (!selectedServicio || !tutor || !tutor.id) return;
 
         setIsLoading(true);
         try {
-            // Mapa de días de la semana con disponibilidad
-            const diasDisponibles = {};
-            disponibilidadesTutor.forEach(disp => {
-                // En disponibilidad, 1 = Lunes, ..., 7 = Domingo
-                diasDisponibles[disp.dia_semana] = true;
-            });
-
-            // Generar fechas para los próximos 30 días - pero solo los próximos 7 días
-            // para reducir la cantidad de peticiones
             const fechasGeneradas = [];
-            const reservasPorFecha = {};
-
-            // Limitamos a 7 días para evitar demasiadas peticiones
             const diasAConsultar = 7;
+            const ahora = new Date();
 
             for (let i = 0; i < diasAConsultar; i++) {
                 const fecha = addDays(today, i);
-                // Obtener día de semana (0-6, donde 0 es domingo)
-                let diaSemana = fecha.getDay();
-                // Convertir a formato 1-7 donde 1 es lunes, 7 es domingo
-                diaSemana = diaSemana === 0 ? 7 : diaSemana;
 
-                // Verificar si hay disponibilidad ese día de la semana
-                if (diasDisponibles[diaSemana]) {
+                // Verificar disponibilidad considerando la hora actual
+                const disponible = await verificarDisponibilidadFecha(fecha, disponibilidadesTutor);
+
+                if (disponible) {
                     fechasGeneradas.push(fecha);
                 }
             }
 
             setFechasDisponibles(fechasGeneradas);
+
+            // Si la fecha seleccionada ya no es válida, seleccionar la primera disponible
+            if (fechasGeneradas.length > 0 && !fechasGeneradas.some(f => isSameDay(f, selectedDate))) {
+                setSelectedDate(fechasGeneradas[0]);
+            }
         } catch (err) {
             setError(`Error al calcular fechas disponibles: ${err.message}`);
         } finally {
@@ -162,11 +193,25 @@ const TutorProfile = () => {
             const response = await ApiService.fetchApi(`/disponibilidades/disponibles/${tutor.id}/${fechaStr}`);
 
             if (response.success) {
-                const horarios = response.data.map(disp => ({
+                let horarios = response.data.map(disp => ({
                     hora_inicio: disp.hora_inicio,
                     hora_fin: disp.hora_fin,
                     disponibilidad_id: disp.id
                 }));
+
+                // Si es hoy, filtrar horarios que ya pasaron
+                if (isSameDay(selectedDate, new Date())) {
+                    const ahora = new Date();
+                    const horaActual = ahora.getHours();
+                    const minutosActuales = ahora.getMinutes();
+                    const tiempoActualEnMinutos = horaActual * 60 + minutosActuales + 60; // +60 min de margen
+
+                    horarios = horarios.filter(horario => {
+                        const [horaInicio, minutosInicio] = horario.hora_inicio.split(':').map(Number);
+                        const tiempoInicioEnMinutos = horaInicio * 60 + minutosInicio;
+                        return tiempoInicioEnMinutos > tiempoActualEnMinutos;
+                    });
+                }
 
                 setHorariosDisponibles(horarios);
             } else {
@@ -252,7 +297,28 @@ const TutorProfile = () => {
         const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
         return months[date.getMonth()];
     };
+    const setTutorImage = async (imageUrl) => {
+        try {
+            const imageResponse = await fetch(imageUrl, {
+                headers: {
+                    'ngrok-skip-browser-warning': 'true'
+                }
+            });
 
+            if (imageResponse.ok) {
+                const blob = await imageResponse.blob();
+                const objectURL = URL.createObjectURL(blob);
+                setTutor(prevTutor => ({
+                    ...prevTutor,
+                    foto_perfil: objectURL
+                }));
+            } else {
+                console.error('Error fetching image:', imageResponse.statusText);
+            }
+        } catch (err) {
+            console.error('Error fetching image:', err);
+        }
+    };
     // Agrupar fechas disponibles por día de la semana
     const getFechasAgrupadasPorDia = () => {
         const grupos = {};
@@ -321,19 +387,17 @@ const TutorProfile = () => {
                             <div className="tutor-profile mb-4">
                                 <div className="row">
                                     <div className="col-4 col-md-3 mb-3">
-                                        <div className="profile-image-container">
+                                        <div className="profile-image-container d-flex justify-content-center align-items-center">
                                             {tutor.foto_perfil ? (
                                                 <img
                                                     src={tutor.foto_perfil}
                                                     alt={`${tutor.nombre} ${tutor.apellido}`}
-                                                    className="img-fluid rounded-circle profile-image shadow-sm"
-                                                    style={{ maxWidth: '90px' }}
-                                                    onError={(e) => {
-                                                        e.target.onerror = null;
-                                                    }}
+                                                    className="img-fluid rounded-circle shadow-sm"
+                                                    style={{ width: '100px', height: '100px', objectFit: 'cover' }}
                                                 />
                                             ) : (
-                                                <div className="profile-avatar">
+                                                <div className="profile-avatar d-flex justify-content-center align-items-center bg-light rounded-circle shadow-sm"
+                                                     style={{ width: '100px', height: '100px' }}>
                                                     <i className="bi bi-person-circle fs-1 text-secondary"></i>
                                                 </div>
                                             )}
@@ -438,7 +502,7 @@ const TutorProfile = () => {
                                     ) : fechasDisponibles.length === 0 ? (
                                         <div className="alert alert-info">
                                             <i className="bi bi-info-circle me-2"></i>
-                                            No hay fechas disponibles para los próximos 7 días.
+                                            No hay fechas disponibles para los próximos 7 días. El tutor puede no tener horarios futuros disponibles o todas las fechas pueden estar reservadas.
                                         </div>
                                     ) : (
                                         <div className="fechas-disponibles mb-4">
@@ -448,18 +512,26 @@ const TutorProfile = () => {
                                                         <i className="bi bi-calendar-day me-2"></i>
                                                         Próximos Días Disponibles
                                                     </h3>
+                                                    <small className="text-muted">
+                                                        <i className="bi bi-info-circle me-1"></i>
+                                                        Se requiere reservar con al menos 1 hora de anticipación
+                                                    </small>
                                                 </div>
                                                 <div className="card-body p-3">
                                                     <div className="d-flex flex-wrap">
-                                                        {fechasDisponibles.map(fecha => (
-                                                            <button
-                                                                key={fecha.toISOString()}
-                                                                className={`btn btn-outline-success me-2 mb-2 ${isSameDay(selectedDate, fecha) ? 'active' : ''}`}
-                                                                onClick={() => handleDateChange(fecha)}
-                                                            >
-                                                                {formatDayName(fecha).substring(0, 3)} {fecha.getDate()} {formatMonthName(fecha).substring(0, 3)}
-                                                            </button>
-                                                        ))}
+                                                        {fechasDisponibles.map(fecha => {
+                                                            const esHoy = isSameDay(fecha, new Date());
+                                                            return (
+                                                                <button
+                                                                    key={fecha.toISOString()}
+                                                                    className={`btn btn-outline-success me-2 mb-2 ${isSameDay(selectedDate, fecha) ? 'active' : ''}`}
+                                                                    onClick={() => handleDateChange(fecha)}
+                                                                >
+                                                                    {esHoy ? 'Hoy' : formatDayName(fecha).substring(0, 3)} {fecha.getDate()} {formatMonthName(fecha).substring(0, 3)}
+                                                                    {esHoy && <i className="bi bi-clock ms-1"></i>}
+                                                                </button>
+                                                            );
+                                                        })}
                                                     </div>
                                                 </div>
                                             </div>
@@ -469,7 +541,7 @@ const TutorProfile = () => {
                             )}
 
                             {/* Mostrar horarios disponibles para la fecha seleccionada */}
-                            {selectedServicio && selectedDate && (
+                            {selectedServicio && selectedDate && fechasDisponibles.length > 0 && (
                                 <div className="mb-5 pb-5"> {/* Añadido padding y margin bottom para evitar solapamiento con home bar */}
                                     <h2 className="fs-5 fw-bold mb-3">
                                         <i className="bi bi-clock me-2 text-warning"></i>
@@ -512,7 +584,11 @@ const TutorProfile = () => {
                                             <div className="text-center p-4 mb-5">
                                                 <i className="bi bi-calendar-x fs-1 text-muted"></i>
                                                 <p className="mt-3">No hay horarios disponibles para esta fecha</p>
-                                                <p className="text-muted">Prueba seleccionando otra fecha o contacta con el tutor</p>
+                                                <p className="text-muted">
+                                                    {isSameDay(selectedDate, new Date())
+                                                        ? 'Los horarios restantes de hoy ya pasaron o no están disponibles'
+                                                        : 'Prueba seleccionando otra fecha o contacta con el tutor'}
+                                                </p>
                                             </div>
                                         )}
                                     </div>
