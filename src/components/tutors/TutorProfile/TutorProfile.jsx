@@ -9,10 +9,11 @@ import { es } from 'date-fns/locale';
 import 'react-datepicker/dist/react-datepicker.css';
 import '../../../commonTables.css';
 
-// Registrar locale español para DatePicker
+
 registerLocale('es', es);
 
 const TutorProfile = () => {
+    const API_URL = (import.meta.env.VITE_BACKEND_URL);
     const { email } = useParams();
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -29,20 +30,42 @@ const TutorProfile = () => {
     const today = new Date();
     const maxDate = addDays(today, 30);
 
-    // Estado para disponibilidades del tutor por día de la semana
+
     const [disponibilidadesTutor, setDisponibilidadesTutor] = useState([]);
-    // Estado para fechas con reservas
+
     const [fechasConReservas, setFechasConReservas] = useState({});
-    // Estado para fechas disponibles
+
     const [fechasDisponibles, setFechasDisponibles] = useState([]);
-    // Estado para mostrar calendario de disponibilidad
+
     const [showCalendario, setShowCalendario] = useState(false);
 
-    // Función para comparar si dos fechas son el mismo día
     const isSameDay = (date1, date2) => {
         return date1.getDate() === date2.getDate() &&
             date1.getMonth() === date2.getMonth() &&
             date1.getFullYear() === date2.getFullYear();
+    };
+
+    const setTutorImage = async (imageUrl) => {
+        try {
+            const imageResponse = await fetch(imageUrl, {
+                headers: {
+                    'ngrok-skip-browser-warning': 'true'
+                }
+            });
+
+            if (imageResponse.ok) {
+                const blob = await imageResponse.blob();
+                const objectURL = URL.createObjectURL(blob);
+                setTutor(prevTutor => ({
+                    ...prevTutor,
+                    foto_perfil: objectURL
+                }));
+            } else {
+                console.error('Error fetching image:', imageResponse.statusText);
+            }
+        } catch (err) {
+            console.error('Error fetching image:', err);
+        }
     };
 
     useEffect(() => {
@@ -77,13 +100,18 @@ const TutorProfile = () => {
                 if (serviciosResponse.success) {
                     setServicios(serviciosResponse.data);
                 }
+
+                // Primero establecer los datos del tutor
+                setTutor(response.data);
+
+                // Luego manejar la imagen si existe
                 if (response.data.foto_perfil) {
                     const imageUrl = response.data.foto_perfil.startsWith('http')
                         ? response.data.foto_perfil
-                        : `http://localhost:7000${response.data.foto_perfil}`;
-                    setTutor({ ...response.data, foto_perfil: imageUrl });
-                } else {
-                    setTutor(response.data);
+                        : `${API_URL}${response.data.foto_perfil}`;
+
+                    // Cargar la imagen mediante blob
+                    await setTutorImage(imageUrl);
                 }
             } else {
                 throw new Error(response.message || 'Error al obtener información del tutor');
@@ -297,28 +325,7 @@ const TutorProfile = () => {
         const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
         return months[date.getMonth()];
     };
-    const setTutorImage = async (imageUrl) => {
-        try {
-            const imageResponse = await fetch(imageUrl, {
-                headers: {
-                    'ngrok-skip-browser-warning': 'true'
-                }
-            });
 
-            if (imageResponse.ok) {
-                const blob = await imageResponse.blob();
-                const objectURL = URL.createObjectURL(blob);
-                setTutor(prevTutor => ({
-                    ...prevTutor,
-                    foto_perfil: objectURL
-                }));
-            } else {
-                console.error('Error fetching image:', imageResponse.statusText);
-            }
-        } catch (err) {
-            console.error('Error fetching image:', err);
-        }
-    };
     // Agrupar fechas disponibles por día de la semana
     const getFechasAgrupadasPorDia = () => {
         const grupos = {};
@@ -333,6 +340,15 @@ const TutorProfile = () => {
 
         return grupos;
     };
+
+    // Cleanup de URLs de blob cuando el componente se desmonte
+    useEffect(() => {
+        return () => {
+            if (tutor?.foto_perfil && tutor.foto_perfil.startsWith('blob:')) {
+                URL.revokeObjectURL(tutor.foto_perfil);
+            }
+        };
+    }, [tutor?.foto_perfil]);
 
     if (isLoading && !tutor) {
         return (
