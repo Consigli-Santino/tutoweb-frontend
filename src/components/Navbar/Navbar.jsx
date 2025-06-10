@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import ApiService from '../../services/ApiService';
-import utnLogo from '../../assets/UTN_logo.jpg';
+import logo from '../../assets/d67bf100-ca44-453c-8737-aeffbe5d0c18.png';
 import './Navbar.css';
 import '../HomeBar/HomeBar.css'; // Importa los estilos del HomeBar
 
@@ -258,7 +258,7 @@ const Navbar = ({ userOptions = [] }) => {
                 <div className="offcanvas-header text-white" style={{ backgroundColor: '#283048' }}>
                     <div className="d-flex align-items-center">
                         <div className="bg-white rounded-3 p-1 me-2" style={{ width: '40px', height: '40px' }}>
-                            <img src={utnLogo} alt="Logo UTN" className="img-fluid" />
+                            <img src={logo} alt="Logo UTN" className="img-fluid" />
                         </div>
                         <h5 className="offcanvas-title">TutoWeb</h5>
                     </div>

@@ -1,6 +1,7 @@
 /* ===== CLASS COUNTDOWN STYLES ===== */
 .timer-container {
     transition: all 0.3s ease;
+    border-radius: 15px;
 }
 
 .timer-unit {
@@ -10,11 +11,14 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    border-radius: 10px;
+    transition: all 0.2s ease;
 }
 
 .seconds-unit {
     background-color: #283048 !important;
     border-color: #283048 !important;
+    box-shadow: 0 2px 8px rgba(40, 48, 72, 0.3);
 }
 
 .seconds-number {
@@ -24,9 +28,11 @@
 @keyframes pulse {
     0%, 100% {
         transform: scale(1);
+        opacity: 1;
     }
     50% {
-        transform: scale(1.1);
+        transform: scale(1.05);
+        opacity: 0.9;
     }
 }
 
@@ -51,33 +57,43 @@
 .bubble-game-card {
     background: linear-gradient(145deg, #ffffff, #f8f9fa);
     border: none !important;
-    border-radius: 20px;
     overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+}
+
+.bubble-game-card:hover {
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
 }
 
 .game-title {
-    background: linear-gradient(135deg, #283048, #667eea);
+    background: linear-gradient(135deg, #283048 0%, #859398 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    animation: titleGlow 2s ease-in-out infinite alternate;
+    animation: titleGlow 3s ease-in-out infinite alternate;
 }
 
 @keyframes titleGlow {
     from {
-        filter: brightness(1);
+        filter: brightness(0.9);
     }
     to {
-        filter: brightness(1.2);
+        filter: brightness(1.1);
     }
 }
 
 .game-badge {
-    border-radius: 15px;
-    padding: 8px 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    animation: badgePulse 2s ease-in-out infinite;
+    border-radius: 12px;
+    padding: 6px 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    animation: badgePulse 3s ease-in-out infinite;
+    transition: all 0.2s ease;
+}
+
+.game-badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
 }
 
 @keyframes badgePulse {
@@ -85,27 +101,28 @@
         transform: scale(1);
     }
     50% {
-        transform: scale(1.05);
+        transform: scale(1.02);
     }
 }
 
 .floating-icon {
     font-size: 4rem !important;
     animation: float 3s ease-in-out infinite;
+    opacity: 0.8;
 }
 
 @keyframes float {
     0%, 100% {
-        transform: translateY(0px);
+        transform: translateY(0px) rotate(0deg);
     }
     50% {
-        transform: translateY(-15px);
+        transform: translateY(-15px) rotate(5deg);
     }
 }
 
 .bounce-icon {
     font-size: 4rem !important;
-    animation: bounce 1s ease-in-out infinite;
+    animation: bounce 1.5s ease-in-out infinite;
 }
 
 @keyframes bounce {
@@ -121,38 +138,63 @@
 }
 
 .pulse-button {
-    border-radius: 25px;
     padding: 12px 30px;
     border: none;
-    box-shadow: 0 6px 20px rgba(40, 48, 72, 0.3);
-    transition: all 0.3s ease;
-    animation: pulseGlow 2s ease-in-out infinite;
+    box-shadow: 0 4px 16px rgba(40, 48, 72, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    animation: pulseGlow 3s ease-in-out infinite;
+    position: relative;
+    overflow: hidden;
+}
+
+.pulse-button::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.pulse-button:hover::before {
+    width: 300px;
+    height: 300px;
 }
 
 @keyframes pulseGlow {
     0%, 100% {
-        box-shadow: 0 6px 20px rgba(40, 48, 72, 0.3);
+        box-shadow: 0 4px 16px rgba(40, 48, 72, 0.2);
     }
     50% {
-        box-shadow: 0 8px 25px rgba(40, 48, 72, 0.5);
+        box-shadow: 0 6px 20px rgba(40, 48, 72, 0.3);
     }
 }
 
 .pulse-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(40, 48, 72, 0.4);
+    box-shadow: 0 6px 24px rgba(40, 48, 72, 0.3);
+}
+
+.pulse-button:active {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(40, 48, 72, 0.2);
 }
 
 .score-display {
     background: linear-gradient(145deg, #f8f9fa, #ffffff);
     border-radius: 20px;
     padding: 20px;
-    box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
-    border: 2px solid rgba(102, 126, 234, 0.2);
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .score-number {
     animation: scoreGlow 1s ease-in-out;
+    color: #283048;
 }
 
 @keyframes scoreGlow {
@@ -171,32 +213,24 @@
 
 .counter-number {
     display: inline-block;
-    animation: counterPulse 0.5s ease;
+    transition: all 0.3s ease;
 }
 
-@keyframes counterPulse {
-    0% {
-        transform: scale(1);
-    }
-    50% {
-        transform: scale(1.2);
-    }
-    100% {
-        transform: scale(1);
-    }
+.counter-number:hover {
+    transform: scale(1.1);
 }
 
 .game-progress {
-    border-radius: 10px;
-    background: rgba(255,255,255,0.2);
+    background: rgba(0, 0, 0, 0.05);
     overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .progress-animated {
-    border-radius: 10px;
-    background: linear-gradient(45deg, #ffc107, #fd7e14);
+    background: linear-gradient(90deg, #ffc107 0%, #ff8c00 100%);
     background-size: 200% 100%;
     animation: progressShine 2s ease-in-out infinite;
+    transition: width 0.3s ease;
 }
 
 @keyframes progressShine {
@@ -208,55 +242,119 @@
     }
 }
 
+/* Estilos mejorados para las burbujas */
 .bubble {
-    animation: bubbleEntrance 0.5s ease-out;
-    transition: transform 0.1s ease;
+    animation: bubbleEntrance 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: transform;
+}
+
+.bubble:hover {
+    filter: brightness(1.1);
 }
 
 @keyframes bubbleEntrance {
     0% {
-        transform: scale(0);
+        transform: scale(0) rotate(0deg);
         opacity: 0;
     }
     50% {
-        transform: scale(1.2);
+        transform: scale(1.15) rotate(180deg);
     }
     100% {
-        transform: scale(1);
-        opacity: 1;
+        transform: scale(1) rotate(360deg);
+        opacity: 0.85;
     }
 }
 
 .particle {
-    animation: particleExplosion 0.8s ease-out forwards;
+    animation: particleExplosion 1s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    will-change: transform, opacity;
 }
 
 @keyframes particleExplosion {
     0% {
-        transform: scale(1);
+        transform: scale(1) translate(0, 0);
         opacity: 1;
     }
     100% {
-        transform: scale(0);
+        transform: scale(0.2) translate(var(--tx, 0), var(--ty, 0));
         opacity: 0;
     }
 }
 
-/* ===== MOBILE RESPONSIVE ===== */
-.bubble-game-container {
-    padding-bottom: 20px; /* Espacio normal en desktop */
+/* Área de juego con bordes suaves */
+.game-area {
+    border-radius: 15px;
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.06);
+    position: relative;
 }
 
-/* Ajuste específico para mobile */
+.game-area::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.02) 100%);
+    pointer-events: none;
+    border-radius: 15px;
+}
+
+/* Estados vacíos mejorados */
+.empty-state {
+    padding: 30px;
+    animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.empty-state h3 {
+    color: #283048;
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    color: #6c757d;
+    line-height: 1.6;
+}
+
+/* Efectos de hover suaves */
+.timer-unit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.game-button {
+    font-size: 1rem;
+    letter-spacing: 0.5px;
+}
+
+/* ===== MOBILE RESPONSIVE ===== */
+.bubble-game-container {
+    padding-bottom: 20px;
+}
+
 @media (max-width: 767.98px) {
     .timer-unit {
         min-width: 28px;
         min-height: 35px;
         font-size: 0.8rem;
+        border-radius: 8px;
     }
 
     .bubble-game-container {
-        padding-bottom: 0; /* Sin padding extra */
+        padding-bottom: 0;
         margin-bottom: 0;
     }
 
@@ -266,8 +364,9 @@
     }
 
     .game-area {
-        min-height: 250px !important; /* MÁS PEQUEÑA PARA VER PUNTAJES */
+        min-height: 250px !important;
         height: 250px !important;
+        border-radius: 12px;
     }
 
     .card-header {
@@ -275,13 +374,13 @@
     }
 
     .card-body {
-        padding: 0 !important; /* ELIMINAR TODO EL PADDING */
+        padding: 0 !important;
     }
 
     .card-footer {
-        padding: 8px 12px !important; /* MENOS PADDING ARRIBA para pegarlo más */
-        margin-top: -10px !important; /* MÁS MARGEN NEGATIVO para acercarlo AÚN MÁS */
-        border-top: none !important; /* Sin borde superior */
+        padding: 8px 12px !important;
+        margin-top: -10px !important;
+        border-top: none !important;
     }
 
     .game-title {
@@ -291,10 +390,12 @@
     .game-badge {
         font-size: 0.7rem !important;
         padding: 4px 8px !important;
+        border-radius: 8px;
     }
 
     .timer-container {
-        padding: 12px !important;
+        padding: 10px !important;
+        border-radius: 12px;
     }
 
     .floating-icon {
@@ -306,7 +407,7 @@
     }
 
     .empty-state {
-        padding: 15px !important; /* Menos padding en estados vacíos */
+        padding: 15px !important;
     }
 
     .empty-state h3 {
@@ -321,24 +422,25 @@
     .pulse-button {
         padding: 8px 20px !important;
         font-size: 0.85rem !important;
+        border-radius: 20px;
     }
 
     .score-display {
         padding: 15px !important;
+        border-radius: 15px;
     }
 
     .score-number {
         font-size: 2rem !important;
     }
 
-    /* Hacer el contador de stats más compacto Y MÁS PEGADO */
     .card-footer .col-4 {
         padding: 0 5px !important;
     }
 
     .card-footer small {
         font-size: 0.7rem !important;
-        margin-bottom: 2px !important; /* MENOS ESPACIO entre texto y número */
+        margin-bottom: 2px !important;
     }
 
     .counter-number {
@@ -347,18 +449,23 @@
 
     .progress {
         height: 6px !important;
-        margin-top: 3px !important; /* MENOS MARGEN en la barra de progreso */
+        margin-top: 3px !important;
+        border-radius: 6px;
     }
 
-    /* AJUSTE ESPECÍFICO para el row de stats */
     .card-footer .row {
         margin: 0 !important;
         gap: 0 !important;
     }
 
-    /* ELIMINAR cualquier spacing adicional en los estados del juego */
     .d-flex.flex-column.align-items-center.justify-content-center.h-100 {
         padding: 10px !important;
+    }
+
+    /* Ajustes para burbujas en móvil */
+    .bubble {
+        max-width: 50px;
+        max-height: 50px;
     }
 }
 
@@ -369,6 +476,53 @@
 
 @media (max-width: 767.98px) {
     .home-bar-spacing {
-        height: 140px; /* Espacio suficiente para HomeBar */
+        height: 140px;
+    }
+}
+
+/* ===== UTILIDADES ADICIONALES ===== */
+.text-primary {
+    color: #283048 !important;
+}
+
+.bg-primary {
+    background-color: #283048 !important;
+}
+
+.border-primary {
+    border-color: #283048 !important;
+}
+
+/* Mejoras de accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Soporte para modo oscuro */
+@media (prefers-color-scheme: dark) {
+    .bubble-game-card {
+        background: linear-gradient(145deg, #1a1a1a, #2d2d2d);
+        color: #ffffff;
+    }
+
+    .game-area {
+        background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%) !important;
+    }
+
+    .empty-state h3 {
+        color: #ffffff;
+    }
+
+    .empty-state p {
+        color: #b0b0b0;
+    }
+
+    .score-display {
+        background: linear-gradient(145deg, #2d2d2d, #3a3a3a);
+        border-color: rgba(255, 255, 255, 0.1);
     }
 }

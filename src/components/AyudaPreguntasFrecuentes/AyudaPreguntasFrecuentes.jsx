@@ -25,7 +25,15 @@ const AyudaPreguntasFrecuentes = () => {
         },
         {
             pregunta: "¿Qué tipos de tutoría están disponibles?",
-            respuesta: "Ofrecemos tutorías virtuales (videollamadas)."
+            respuesta: "Ofrecemos tutorías virtuales a través de videollamadas con Jitsi Meet, una plataforma segura y fácil de usar."
+        },
+        {
+            pregunta: "¿Necesito descargar alguna aplicación?",
+            respuesta: "¡SÍ! Es FUNDAMENTAL y MUY RECOMENDADO tener instalada la aplicación Jitsi Meet en tu dispositivo móvil. Esto garantiza una mejor experiencia de videollamada, mayor estabilidad y funcionalidades adicionales como grabación de pantalla si es necesario."
+        },
+        {
+            pregunta: "¿Cómo inicio una videollamada?",
+            respuesta: "Para iniciar una clase virtual, debes acceder a través de Jitsi Meet. Encontrarás un botón 'Iniciar Videollamada' en tu reserva confirmada. Al hacer clic, te dirigirá a Jitsi Meet donde deberás loguearte con tu cuenta de TutoWeb para acceder a la sala de la tutoría."
         },
         {
             pregunta: "¿Cómo se realizan los pagos?",
@@ -57,11 +65,15 @@ const AyudaPreguntasFrecuentes = () => {
         },
         {
             pregunta: "¿Cómo accedo a las tutorías virtuales?",
-            respuesta: "Para tutorías virtuales, encontrarás un botón 'Iniciar Videollamada' en la reserva confirmada. Este botón estará disponible 15 minutos antes y después del horario programado."
+            respuesta: "Para tutorías virtuales:\n1. Encuentra el botón 'Iniciar Videollamada' en tu reserva confirmada\n2. Este botón estará disponible 15 minutos antes y después del horario programado\n3. Al hacer clic, serás dirigido a Jitsi Meet\n4. Deberás loguearte con tu cuenta de TutoWeb\n5. Una vez autenticado, accederás a la sala de tutoría\n\n¡IMPORTANTE: Asegúrate de tener instalada la app de Jitsi Meet en tu móvil!"
         },
         {
             pregunta: "¿Qué pasa si el tutor no se presenta?",
             respuesta: "Si el tutor no se presenta, puedes cancelar la reserva y no se te cobrará. También puedes contactar al tutor a través de la plataforma."
+        },
+        {
+            pregunta: "¿Qué hago si tengo problemas con Jitsi Meet?",
+            respuesta: "Si tienes problemas con Jitsi Meet:\n1. Asegúrate de tener la aplicación instalada y actualizada\n2. Verifica tu conexión a internet\n3. Intenta cerrar y abrir la aplicación nuevamente\n4. Si el problema persiste, contacta a soporte técnico"
         }
     ];
 
@@ -84,13 +96,22 @@ const AyudaPreguntasFrecuentes = () => {
             respuesta: "En 'Gestión de Tutorías' puedes:\n- Ver reservas pendientes y confirmarlas\n- Marcar tutorías como completadas"
         },
         {
+            pregunta: "¿Cómo inicio una tutoría virtual?",
+            respuesta: "Para iniciar una tutoría virtual:\n1. Ve a 'Gestión de Tutorías' y encuentra la reserva confirmada\n2. Haz clic en 'Iniciar Videollamada' (disponible 15 min antes del horario)\n3. Serás dirigido a Jitsi Meet\n4. Loguéate con tu cuenta de TutoWeb\n5. Espera a que el estudiante se una a la sala\n\n¡IMPORTANTE: Ten instalada la app de Jitsi Meet para una mejor experiencia!"
+        },
+        {
             pregunta: "¿Cuándo recibo el pago?",
-            respuesta: "Los pagos con Mercado Pago se procesan automáticamente."
+            respuesta: "Los pagos con Mercado Pago se procesan automáticamente después de marcar la tutoría como completada."
         }
     ];
 
     // Guía paso a paso para estudiantes
     const guiaEstudiantes = [
+        {
+            titulo: "0. Preparación Técnica",
+            descripcion: "FUNDAMENTAL: Descarga e instala la aplicación Jitsi Meet en tu dispositivo móvil. Esto garantiza una experiencia de videollamada óptima.",
+            icono: "bi-download"
+        },
         {
             titulo: "1. Buscar un Tutor",
             descripcion: "Explora los tutores destacados en la página principal o usa los filtros para encontrar tutores por materia.",
@@ -118,7 +139,7 @@ const AyudaPreguntasFrecuentes = () => {
         },
         {
             titulo: "6. Asistir a la Tutoría",
-            descripcion: "Para realizar las tutorías virtuales, usa el botón de videollamada.",
+            descripcion: "Haz clic en 'Iniciar Videollamada', loguéate en Jitsi Meet con tu cuenta de TutoWeb y accede a la sala de tutoría.",
             icono: "bi-camera-video"
         },
         {
@@ -130,6 +151,11 @@ const AyudaPreguntasFrecuentes = () => {
 
     // Guía paso a paso para tutores
     const guiaTutores = [
+        {
+            titulo: "0. Preparación Técnica",
+            descripcion: "FUNDAMENTAL: Descarga e instala la aplicación Jitsi Meet en tu dispositivo móvil para ofrecer tutorías de calidad.",
+            icono: "bi-download"
+        },
         {
             titulo: "1. Configurar Materias",
             descripcion: "Ve a 'Mis Materias' y selecciona las materias de tu carrera que quieres tutorizar.",
@@ -152,7 +178,7 @@ const AyudaPreguntasFrecuentes = () => {
         },
         {
             titulo: "5. Realizar Tutorías",
-            descripcion: "Imparte las tutorías según la modalidad acordada (virtual).",
+            descripcion: "Inicia la videollamada en Jitsi Meet, loguéate con tu cuenta de TutoWeb y espera al estudiante en la sala.",
             icono: "bi-camera-video"
         },
         {
@@ -193,16 +219,18 @@ const AyudaPreguntasFrecuentes = () => {
         <div className="row g-3">
             {steps.map((step, index) => (
                 <div key={index} className="col-12 col-md-6 col-lg-4">
-                    <div className="card h-100 shadow-sm border-0 rounded-4">
+                    <div className={`card h-100 shadow-sm border-0 rounded-4 ${step.titulo.includes('Preparación Técnica') ? 'border-warning border-2' : ''}`}>
                         <div className="card-body p-3">
                             <div className="d-flex align-items-start">
                                 <div className="me-3">
-                                    <div className="p-3 rounded text-white" style={{ backgroundColor: '#283048' }}>
+                                    <div className={`p-3 rounded text-white ${step.titulo.includes('Preparación Técnica') ? 'bg-warning' : ''}`} style={!step.titulo.includes('Preparación Técnica') ? { backgroundColor: '#283048' } : {}}>
                                         <i className={`bi ${step.icono} fs-4`}></i>
                                     </div>
                                 </div>
                                 <div>
-                                    <h5 className="card-title fw-bold text-dark">{step.titulo}</h5>
+                                    <h5 className={`card-title fw-bold ${step.titulo.includes('Preparación Técnica') ? 'text-warning' : 'text-dark'}`}>
+                                        {step.titulo}
+                                    </h5>
                                     <p className="card-text text-muted small">{step.descripcion}</p>
                                 </div>
                             </div>
@@ -238,6 +266,21 @@ const AyudaPreguntasFrecuentes = () => {
                         <strong>¡Bienvenido al Centro de Ayuda!</strong>
                         <div className="mt-1">
                             Aquí encontrarás guías paso a paso y respuestas a las preguntas más frecuentes sobre TutoWeb.
+                        </div>
+                    </div>
+
+                    {/* Alerta importante sobre Jitsi Meet */}
+                    <div className="alert alert-warning mb-4 rounded-3">
+                        <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                        <strong>¡IMPORTANTE!</strong>
+                        <div className="mt-1">
+                            <strong>Es FUNDAMENTAL tener instalada la aplicación Jitsi Meet en tu dispositivo móvil</strong> para las videollamadas. Esto garantiza una mejor calidad de video, audio y estabilidad durante las tutorías.
+                        </div>
+                        <div className="mt-2">
+                            <small>
+                                <i className="bi bi-download me-1"></i>
+                                Descarga Jitsi Meet desde tu tienda de aplicaciones antes de tu primera tutoría.
+                            </small>
                         </div>
                     </div>
 
@@ -375,7 +418,18 @@ const AyudaPreguntasFrecuentes = () => {
                             Consejos Útiles
                         </h2>
                         <div className="row g-3">
-                            <div className="col-12 col-md-4">
+                            <div className="col-12 col-md-3">
+                                <div className="alert alert-warning border rounded-3">
+                                    <h6 className="fw-bold">
+                                        <i className="bi bi-download me-2 text-warning"></i>
+                                        App Jitsi Meet
+                                    </h6>
+                                    <p className="mb-0 small">
+                                        <strong>FUNDAMENTAL:</strong> Instala la app de Jitsi Meet en tu móvil para videollamadas de calidad.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="col-12 col-md-3">
                                 <div className="alert alert-light border rounded-3">
                                     <h6 className="fw-bold">
                                         <i className="bi bi-bell me-2 text-primary"></i>
@@ -386,7 +440,7 @@ const AyudaPreguntasFrecuentes = () => {
                                     </p>
                                 </div>
                             </div>
-                            <div className="col-12 col-md-4">
+                            <div className="col-12 col-md-3">
                                 <div className="alert alert-light border rounded-3">
                                     <h6 className="fw-bold">
                                         <i className="bi bi-wifi me-2 text-success"></i>
@@ -397,7 +451,7 @@ const AyudaPreguntasFrecuentes = () => {
                                     </p>
                                 </div>
                             </div>
-                            <div className="col-12 col-md-4">
+                            <div className="col-12 col-md-3">
                                 <div className="alert alert-light border rounded-3">
                                     <h6 className="fw-bold">
                                         <i className="bi bi-star me-2 text-warning"></i>
