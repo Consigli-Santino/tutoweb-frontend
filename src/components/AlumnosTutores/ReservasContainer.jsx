@@ -247,20 +247,6 @@ const ReservasContainer = () => {
     const canCompleteReserva = (reserva) => {
         const actualStatus = reserva.actualStatus || reserva.estado;
         const action = reservaActions[reserva.id];
-
-        // DEBUG para reserva 1033
-        if (reserva.id === 1033) {
-            console.log('=== DEBUG canCompleteReserva RESERVA 1033 ===');
-            console.log('activeTab:', activeTab);
-            console.log('actualStatus:', actualStatus);
-            console.log('isExpired:', reserva.isExpired);
-            console.log('action:', action);
-            console.log('tutor_opened:', action?.tutor_opened);
-            console.log('estudiante_opened:', action?.estudiante_opened);
-            console.log('Can complete:', activeTab === 'tutor' && actualStatus === 'confirmada' && reserva.isExpired && action?.tutor_opened && action?.estudiante_opened);
-            console.log('============================================');
-        }
-
         // Solo tutores pueden completar
         if (activeTab !== 'tutor') return false;
 
