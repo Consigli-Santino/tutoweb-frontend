@@ -115,15 +115,15 @@ class GameService {
             y: Math.random() * 80 + 10,
             size: type === this.bubbleTypes.GOLDEN ? 50 : Math.random() * 30 + 35,
             color: colorSet,
-            vx: (Math.random() - 0.5) * 2,
-            vy: (Math.random() - 0.5) * 2,
+            vx: (Math.random() - 0.5) * 4, // Velocidad duplicada
+            vy: (Math.random() - 0.5) * 4, // Velocidad duplicada
             opacity: type === this.bubbleTypes.GOLDEN ? 1 : 0.85,
             points: Math.floor(Math.random() * (config.maxPoints - config.minPoints) + config.minPoints),
             rotation: Math.random() * 360,
-            rotationSpeed: (Math.random() - 0.5) * 2,
+            rotationSpeed: (Math.random() - 0.5) * 3,
             scale: 1,
-            bounce: 0.7,
-            gravity: 0.015,
+            bounce: 0.8,
+            gravity: 0.025, // Gravedad aumentada
             clickRadius: 1.5,
             icon: config.icon || null,
             specialEffect: config.specialEffect || null,
@@ -155,11 +155,11 @@ class GameService {
             newY = newY <= 0 ? 0 : (100 - bubble.size * 0.15);
         }
 
-        // Fricción del aire
-        newVx *= 0.998;
-        newVy *= 0.998;
+        // Fricción del aire reducida para más velocidad
+        newVx *= 0.999;
+        newVy *= 0.999;
 
-        // Efectos especiales según el tipo
+        // Efectos especiales según el tipo - simplificados
         const time = Date.now() * 0.001;
         let scaleEffect = 1;
         let glowEffect = bubble.glowIntensity || 0;
@@ -171,10 +171,6 @@ class GameService {
             bubble.rotation += bubble.rotationSpeed * 2;
         } else if (bubble.type === this.bubbleTypes.FREEZE) {
             scaleEffect = 1 + Math.sin(time * 2 + bubble.pulsePhase) * 0.05;
-        } else {
-            // Movimiento ondulatorio sutil para burbujas normales
-            const wobble = Math.sin(time + bubble.pulsePhase) * 0.02;
-            scaleEffect = 1 + wobble;
         }
 
         return {

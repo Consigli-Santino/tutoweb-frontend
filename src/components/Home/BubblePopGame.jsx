@@ -344,7 +344,7 @@ const BubblePopGame = () => {
         setVibrationEnabled(newState);
     };
 
-    // Renderizar burbuja según su tipo
+    // Renderizar burbuja según su tipo con efecto 3D mejorado
     const renderBubble = (bubble) => {
         const isSpecial = bubble.type !== GameService.bubbleTypes.NORMAL;
 
@@ -358,26 +358,32 @@ const BubblePopGame = () => {
                     top: `${bubble.y}%`,
                     width: `${bubble.size}px`,
                     height: `${bubble.size}px`,
-                    background: `radial-gradient(circle at 35% 35%, ${bubble.color.shadow}15, ${bubble.color.bg})`,
+                    background: `radial-gradient(circle at 30% 30%, ${bubble.color.bg}ee, ${bubble.color.shadow}dd)`,
                     borderRadius: '50%',
                     cursor: 'pointer',
                     userSelect: 'none',
-                    transform: `rotate(${bubble.rotation}deg) scale(${bubble.scale})`,
+                    transform: `translate3d(0, 0, 0) rotate(${bubble.rotation}deg) scale(${bubble.scale})`,
                     boxShadow: isSpecial ?
-                        `0 0 ${20 + bubble.glowIntensity * 20}px ${bubble.color.bg}, 0 3px 12px ${bubble.color.shadow}40, inset 0 -3px 8px ${bubble.color.shadow}20` :
-                        `0 3px 12px ${bubble.color.shadow}40, inset 0 -3px 8px ${bubble.color.shadow}20`,
-                    border: `1px solid ${bubble.color.shadow}20`,
+                        `inset -${bubble.size * 0.15}px -${bubble.size * 0.15}px ${bubble.size * 0.3}px ${bubble.color.shadow}aa,
+                         inset ${bubble.size * 0.1}px ${bubble.size * 0.1}px ${bubble.size * 0.2}px rgba(255,255,255,0.5),
+                         0 ${bubble.size * 0.1}px ${bubble.size * 0.2}px ${bubble.color.shadow}66,
+                         0 0 ${20 + bubble.glowIntensity * 20}px ${bubble.color.bg}` :
+                        `inset -${bubble.size * 0.15}px -${bubble.size * 0.15}px ${bubble.size * 0.3}px ${bubble.color.shadow}aa,
+                         inset ${bubble.size * 0.1}px ${bubble.size * 0.1}px ${bubble.size * 0.2}px rgba(255,255,255,0.5),
+                         0 ${bubble.size * 0.1}px ${bubble.size * 0.2}px ${bubble.color.shadow}66`,
+                    border: `2px solid ${bubble.color.bg}`,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontSize: bubble.icon ? `${bubble.size * 0.4}px` : `${bubble.size * 0.3}px`,
                     fontWeight: 'bold',
                     color: 'white',
-                    textShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                    textShadow: '0 2px 4px rgba(0,0,0,0.4)',
                     zIndex: 10,
                     opacity: bubble.opacity,
                     pointerEvents: 'none',
-                    animation: isSpecial ? 'specialBubblePulse 2s ease-in-out infinite' : 'none'
+                    willChange: 'transform',
+                    backfaceVisibility: 'hidden'
                 }}
             >
                 {bubble.icon || bubble.points}
@@ -470,104 +476,200 @@ const BubblePopGame = () => {
                 />
             );
         }
-    }
+    };
+
     return (
-        <div
-            ref={gameAreaRef}
-            className={`bubble-game-container ${freezeActive ? 'freeze-active' : ''}`}
-            onClick={handleGameAreaClick}
-            style={{
-                position: 'relative',
-                width: '100%',
-                overflow: 'hidden',
-                background: '#E0F7FA',
-                borderRadius: '20px'
-            }}
-        >
-            <div className="navbar-spacing"></div>
-            {bubbles.map(renderBubble)}
-            {popEffects.map(renderParticle)}
-
-            {freezeActive && (
-                <div className="freeze-overlay">
-                    <div className="snowflake">❄️</div>
-                    <div className="snowflake">❄️</div>
-                    <div className="snowflake">❄️</div>
-                </div>
-            )}
-
-            {showComboMessage && (
-                <div className="combo-message-container">
-                    <div className="combo-message">
-                        <div className="combo-text">{showComboMessage.text}</div>
-                        <div className="combo-multiplier">x{showComboMessage.multiplier}</div>
+        <div className="container-fluid px-2 py-1 bubble-game-container">
+            <div className="card shadow card-main bubble-game-card" style={{ borderRadius: '20px', overflow: 'hidden' }}>
+                <div className="card-header bg-transparent border-0 p-3 p-md-4">
+                    <div className="d-flex justify-content-between align-items-center flex-wrap">
+                        <h1 className="fw-bold fs-4 mb-0 game-title">
+                            <i className="bi bi-balloon me-2 text-primary"></i>
+                            ¡A divertirse!
+                        </h1>
+                        <div className="d-flex align-items-center gap-2 flex-wrap">
+                            <span className="badge bg-primary fs-6 game-badge">
+                                <i className="bi bi-trophy me-1"></i>
+                                {score}
+                            </span>
+                            {highScore > 0 && (
+                                <span className="badge bg-success fs-6 game-badge">
+                                    <i className="bi bi-star me-1"></i>
+                                    {highScore}
+                                </span>
+                            )}
+                            <span className={`badge ${freezeActive ? 'bg-info' : 'bg-warning text-dark'} fs-6 game-badge`}>
+                                <i className="bi bi-clock me-1"></i>
+                                {timeLeft}s
+                            </span>
+                            <div className="btn-group btn-group-sm" role="group">
+                                <button
+                                    className={`btn ${soundEnabled ? 'btn-primary' : 'btn-outline-secondary'}`}
+                                    onClick={toggleSound}
+                                    title="Sonido"
+                                >
+                                    <i className={`bi ${soundEnabled ? 'bi-volume-up' : 'bi-volume-mute'}`}></i>
+                                </button>
+                                <button
+                                    className={`btn ${vibrationEnabled ? 'btn-primary' : 'btn-outline-secondary'}`}
+                                    onClick={toggleVibration}
+                                    title="Vibración"
+                                >
+                                    <i className="bi bi-phone-vibrate"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
+
+                    <ClassCountdown onClassAlert={handleClassAlert} />
+
+                    {/* Mensaje de combo */}
+                    {showComboMessage && (
+                        <div className="combo-message-container">
+                            <div className="combo-message animate__animated animate__bounceIn">
+                                <div className="combo-text">{showComboMessage.text}</div>
+                                <div className="combo-multiplier">x{showComboMessage.multiplier}</div>
+                            </div>
+                        </div>
+                    )}
                 </div>
-            )}
 
-            {!gameActive && !gameOver && (
-                <button
-                    onClick={startGame}
-                    className="start-button"
-                    style={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        padding: '15px 30px',
-                        fontSize: '1.2rem',
-                        borderRadius: '10px',
-                        backgroundColor: '#00BCD4',
-                        color: '#fff',
-                        border: 'none',
-                        cursor: 'pointer',
-                        boxShadow: '0 4px 10px rgba(0, 0, 0, 0.2)'
-                    }}
-                >
-                    ¡Jugar!
-                </button>
-            )}
+                <div className="card-body p-0">
+                    {!gameActive && !gameOver && (
+                        <div className="d-flex flex-column align-items-center justify-content-center p-3" style={{ minHeight: window.innerWidth <= 767 ? '250px' : '400px' }}>
+                            <div className="empty-state text-center">
+                                <i className="bi bi-balloon-heart empty-state-icon text-primary floating-icon"></i>
+                                <h3 className="fw-bold mb-3">¡Revienta las Burbujas!</h3>
+                                <p className="text-muted mb-4 px-2">
+                                    Haz clic en las burbujas para reventarlas y ganar puntos.
+                                    <br className="d-none d-md-block" />
+                                    <span className="text-warning fw-bold">⭐ Doradas = x5 puntos</span> •
+                                    <span className="text-danger fw-bold"> 💣 Bombas = Explosión</span> •
+                                    <span className="text-info fw-bold"> ⏱️ Tiempo = +5s</span>
+                                    <br className="d-none d-md-block" />¡Tienes 30 segundos!
+                                </p>
+                                <button
+                                    className="btn btn-lg text-white fw-bold game-button pulse-button"
+                                    style={{ backgroundColor: '#283048', borderRadius: '25px' }}
+                                    onClick={startGame}
+                                >
+                                    <i className="bi bi-play-fill me-2"></i>Comenzar Juego
+                                </button>
+                                {highScore > 0 && (
+                                    <div className="mt-3">
+                                        <small className="text-muted">Mejor puntuación: <span className="fw-bold text-primary">{highScore}</span></small>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
-            {gameOver && (
-                <div
-                    className="game-over-overlay"
-                    style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                        color: '#fff',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        zIndex: 50
-                    }}
-                >
-                    <h2>¡Juego Terminado!</h2>
-                    <p>Puntaje: {score}</p>
-                    <p>Mejor Puntaje: {highScore}</p>
-                    <button
-                        onClick={startGame}
-                        style={{
-                            marginTop: '20px',
-                            padding: '10px 20px',
-                            fontSize: '1rem',
-                            borderRadius: '8px',
-                            backgroundColor: '#00BCD4',
-                            color: '#fff',
-                            border: 'none',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        Jugar de nuevo
-                    </button>
+                    {gameOver && (
+                        <div className="d-flex flex-column align-items-center justify-content-center p-3" style={{ minHeight: window.innerWidth <= 767 ? '250px' : '400px' }}>
+                            <div className="empty-state text-center">
+                                <i className="bi bi-trophy-fill empty-state-icon text-warning bounce-icon"></i>
+                                <h3 className="fw-bold mb-3">¡Juego Terminado!</h3>
+                                <div className="materia-card text-center mb-4 score-display">
+                                    <h2 className="display-4 fw-bold text-primary mb-2 score-number">{score}</h2>
+                                    <p className="mb-0">Puntos obtenidos</p>
+                                    {score > highScore && (
+                                        <div className="badge bg-success mt-2">
+                                            <i className="bi bi-star-fill me-1"></i>
+                                            ¡Nuevo récord!
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="stats-grid mb-3">
+                                    <div className="stat-item">
+                                        <i className="bi bi-bullseye text-primary"></i>
+                                        <div className="stat-value">{totalBubblesPopped > 0 ? Math.round((totalBubblesPopped / clicks) * 100) : 0}%</div>
+                                        <div className="stat-label">Precisión</div>
+                                    </div>
+                                    <div className="stat-item">
+                                        <i className="bi bi-balloon text-success"></i>
+                                        <div className="stat-value">{totalBubblesPopped}</div>
+                                        <div className="stat-label">Burbujas</div>
+                                    </div>
+                                    <div className="stat-item">
+                                        <i className="bi bi-star text-warning"></i>
+                                        <div className="stat-value">{specialBubblesPopped}</div>
+                                        <div className="stat-label">Especiales</div>
+                                    </div>
+                                </div>
+                                <button
+                                    className="btn btn-lg text-white fw-bold game-button pulse-button"
+                                    style={{ backgroundColor: '#283048', borderRadius: '25px' }}
+                                    onClick={startGame}
+                                >
+                                    <i className="bi bi-arrow-repeat me-2"></i>Jugar de Nuevo
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {gameActive && (
+                        <div
+                            ref={gameAreaRef}
+                            className={`position-relative w-100 overflow-hidden game-area ${freezeActive ? 'freeze-active' : ''}`}
+                            onClick={handleGameAreaClick}
+                            style={{
+                                height: window.innerWidth <= 767 ? '250px' : '400px',
+                                background: freezeActive ?
+                                    'linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)' :
+                                    'linear-gradient(135deg, #f5f7fa 0%, #eef1f5 100%)',
+                                cursor: 'crosshair',
+                                borderRadius: '0',
+                                transition: 'background 0.3s ease'
+                            }}
+                        >
+                            {/* Efecto de congelamiento */}
+                            {freezeActive && (
+                                <div className="freeze-overlay">
+                                    <div className="snowflake">❄️</div>
+                                    <div className="snowflake">❄️</div>
+                                    <div className="snowflake">❄️</div>
+                                </div>
+                            )}
+
+                            {/* Burbujas */}
+                            {bubbles.map(renderBubble)}
+
+                            {/* Efectos de partículas */}
+                            {popEffects.map(renderParticle)}
+                        </div>
+                    )}
                 </div>
-            )}
 
-            <ClassCountdown onClassAlert={handleClassAlert} />
+                {gameActive && (
+                    <div className="card-footer bg-transparent border-0 p-3">
+                        <div className="row text-center mt-2">
+                            <div className="col-4">
+                                <small className="text-muted d-block">Combo</small>
+                                <span className={`fw-bold fs-5 ${comboCount >= 3 ? 'text-warning' : 'text-primary'} counter-number`}>
+                                    {comboCount > 0 ? `x${comboCount}` : '-'}
+                                </span>
+                            </div>
+                            <div className="col-4">
+                                <small className="text-muted d-block">Precisión</small>
+                                <span className="fw-bold fs-5 text-success counter-number">
+                                    {clicks > 0 ? Math.round((totalBubblesPopped / clicks) * 100) : 100}%
+                                </span>
+                            </div>
+                            <div className="col-4">
+                                <small className="text-muted d-block">Progreso</small>
+                                <div className="progress mt-1 game-progress" style={{ height: '8px', borderRadius: '10px' }}>
+                                    <div
+                                        className="progress-bar bg-warning progress-animated"
+                                        style={{ width: `${(30 - timeLeft) * 100 / 30}%`, borderRadius: '10px' }}
+                                    ></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Espaciado para HomeBar en mobile */}
             <div className="home-bar-spacing"></div>
         </div>
     );
