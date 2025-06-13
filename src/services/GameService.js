@@ -124,7 +124,7 @@ class GameService {
             scale: 1,
             bounce: 0.8,
             gravity: 0.025, // Gravedad aumentada
-            clickRadius: 1.5,
+            clickRadius: 2.0, // Aumentado de 1.5 a 2.0 para área más grande
             icon: config.icon || null,
             specialEffect: config.specialEffect || null,
             timeBonus: config.timeBonus || 0,
@@ -186,6 +186,7 @@ class GameService {
     }
 
     checkBubbleClick(bubble, clickX, clickY) {
+        // Aumentar el área de click significativamente
         const bubbleRadius = (bubble.size * bubble.clickRadius) / 2;
         const bubbleCenterX = bubble.x + bubble.size * 0.075;
         const bubbleCenterY = bubble.y + bubble.size * 0.075;
@@ -195,7 +196,8 @@ class GameService {
             Math.pow(clickY - bubbleCenterY, 2)
         );
 
-        return distance <= bubbleRadius * 0.15;
+        // Cambiar de 0.15 a 0.25 para área de click más generosa (66% más grande)
+        return distance <= bubbleRadius * 0.25;
     }
 
     findNearbyBubbles(targetBubble, allBubbles, radius = 15) {
