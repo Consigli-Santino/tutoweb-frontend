@@ -30,19 +30,19 @@
 /* Ajustes responsivos para el sidebar */
 @media (max-width: 576px) {
     #profileSidebar {
-        max-width: 75% !important; /* Menor ancho en móviles pequeños */
+        max-width: 75% !important;
     }
 }
 
 @media (min-width: 577px) and (max-width: 768px) {
     #profileSidebar {
-        max-width: 65% !important; /* Menor ancho en tablets */
+        max-width: 65% !important;
     }
 }
 
 @media (min-width: 769px) {
     #profileSidebar {
-        max-width: 280px !important; /* Ancho fijo en desktop */
+        max-width: 280px !important;
     }
 }
 
@@ -63,34 +63,85 @@
     font-weight: bold;
 }
 
-/* Panel de notificaciones */
+/* Contenedor de la campana de notificaciones - MEJORADO */
+.notification-bell-container {
+    position: relative;
+}
+
+/* Panel de notificaciones - COMPLETAMENTE REDISEÑADO */
 .notifications-panel {
     position: absolute;
-    top: 50px;
+    top: 100%;
     right: 0;
-    width: 320px;
-    max-height: 400px;
+    margin-top: 8px;
     background-color: white;
-    border-radius: 8px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    z-index: 9999;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    z-index: 1050; /* Menor que el z-index del navbar pero suficiente para estar encima del contenido */
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+
+    /* Dimensiones responsivas */
+    width: 320px;
+    max-height: 70vh; /* Limitar altura según el viewport */
+
+    /* Animación de entrada */
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+    animation: notificationSlideIn 0.2s ease-out forwards;
+}
+
+@keyframes notificationSlideIn {
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Flecha del panel de notificaciones */
+.notifications-panel::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    right: 20px;
+    width: 16px;
+    height: 16px;
+    background-color: white;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-bottom: none;
+    border-right: none;
+    transform: rotate(45deg);
+    z-index: 1;
 }
 
 .notifications-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 16px;
+    padding: 16px 20px 12px;
     border-bottom: 1px solid #e9ecef;
     background-color: #f8f9fa;
+    position: relative;
+    z-index: 2;
+}
+
+.notifications-header h6 {
+    color: #343a40;
+    font-weight: 600;
 }
 
 .notifications-body {
-    max-height: 350px;
     overflow-y: auto;
+    overflow-x: hidden;
+    flex: 1;
+    /* Scroll suave en iOS */
+    -webkit-overflow-scrolling: touch;
+    /* Asegurar que el scroll funcione correctamente */
+    overscroll-behavior: contain;
+    /* Prevenir el scroll del body cuando se llega al final */
+    scroll-behavior: smooth;
 }
 
 .notification-list {
@@ -101,12 +152,17 @@
 
 .notification-item {
     display: flex;
-    padding: 12px 16px;
-    border-bottom: 1px solid #e9ecef;
+    padding: 16px 20px;
+    border-bottom: 1px solid #f1f3f4;
     cursor: pointer;
-    transition: background-color 0.2s;
-    align-items: center;
-    justify-content: space-between;
+    transition: all 0.2s ease;
+    align-items: flex-start;
+    gap: 12px;
+    position: relative;
+}
+
+.notification-item:last-child {
+    border-bottom: none;
 }
 
 .notification-item:hover {
@@ -114,38 +170,58 @@
 }
 
 .notification-item.unread {
-    background-color: rgba(13, 110, 253, 0.05);
+    background-color: rgba(13, 110, 253, 0.04);
+    border-left: 3px solid #0d6efd;
 }
 
 .notification-item.unread:hover {
-    background-color: rgba(13, 110, 253, 0.1);
+    background-color: rgba(13, 110, 253, 0.08);
 }
 
 .notification-content {
     flex: 1;
+    min-width: 0; /* Para que el texto se trunque correctamente */
 }
 
 .notification-title {
     font-weight: 600;
     font-size: 0.9rem;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
+    color: #212529;
+    line-height: 1.3;
 }
 
 .notification-message {
     font-size: 0.85rem;
     color: #6c757d;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
+    line-height: 1.4;
+    /* Truncar texto largo */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .notification-time {
     font-size: 0.75rem;
     color: #adb5bd;
+    font-weight: 500;
 }
 
 .mark-read-btn {
     color: #0d6efd;
-    padding: 0.25rem;
-    margin-left: 0.5rem;
+    padding: 0.375rem;
+    border: none;
+    background: none;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    opacity: 0.7;
+}
+
+.mark-read-btn:hover {
+    background-color: rgba(13, 110, 253, 0.1);
+    opacity: 1;
 }
 
 .empty-notifications {
@@ -153,25 +229,136 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 24px 16px;
+    padding: 40px 20px;
     color: #6c757d;
 }
 
 .empty-notifications i {
-    font-size: 2rem;
-    margin-bottom: 12px;
-    opacity: 0.5;
+    font-size: 2.5rem;
+    margin-bottom: 16px;
+    opacity: 0.4;
 }
 
 .empty-notifications p {
     margin: 0;
     font-size: 0.9rem;
+    font-weight: 500;
 }
 
-/* Correcciones para pantallas pequeñas */
+/* MEJORAS RESPONSIVAS PRINCIPALES */
+
+/* Móviles pequeños */
+@media (max-width: 375px) {
+    .notifications-panel {
+        width: calc(100vw - 32px);
+        right: -8px;
+        max-height: 60vh;
+    }
+
+    .notifications-panel::before {
+        right: 28px;
+    }
+
+    .notification-item {
+        padding: 12px 16px;
+    }
+
+    .notifications-header {
+        padding: 12px 16px 8px;
+    }
+}
+
+/* Móviles estándar */
 @media (max-width: 576px) {
     .notifications-panel {
         width: 300px;
-        right: -80px;
+        right: -16px;
+        max-height: 65vh;
     }
+
+    .notifications-panel::before {
+        right: 32px;
+    }
+}
+
+/* Tablets */
+@media (min-width: 577px) and (max-width: 768px) {
+    .notifications-panel {
+        width: 340px;
+        max-height: 75vh;
+    }
+}
+
+/* Desktop */
+@media (min-width: 769px) {
+    .notifications-panel {
+        width: 360px;
+        max-height: 80vh;
+    }
+}
+
+/* Asegurar que no interfiera con el navbar o footer */
+.notifications-panel {
+    /* Evitar que se salga de la pantalla verticalmente */
+    max-height: calc(100vh - 120px); /* Reservar espacio para navbar y posible footer */
+}
+
+/* Si hay un footer fijo, ajustar */
+@media (max-height: 600px) {
+    .notifications-panel {
+        max-height: 50vh;
+    }
+}
+
+/* Mejoras en el scrollbar para mejor UX */
+.notifications-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.notifications-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.notifications-body::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.notifications-body::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Indicador visual para notificaciones no leídas */
+.notification-item.unread::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    background-color: #0d6efd;
+    border-radius: 50%;
+}
+
+/* Loading state mejorado */
+.notifications-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 20px;
+    gap: 8px;
+    color: #6c757d;
+}
+
+.notifications-loading .spinner-border {
+    width: 1.2rem;
+    height: 1.2rem;
+}
+
+/* Transiciones suaves para estados */
+.notification-item,
+.mark-read-btn,
+.notifications-panel {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }

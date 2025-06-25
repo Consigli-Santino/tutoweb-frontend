@@ -27,19 +27,52 @@ const Navbar = ({ userOptions = [] }) => {
         return () => clearInterval(interval);
     }, []);
 
+    // Mejorado useEffect para notificaciones
     useEffect(() => {
         function handleClickOutside(event) {
-            if (notificationsRef.current && !notificationsRef.current.contains(event.target) &&
+            // Verificar si el clic fue fuera del panel de notificaciones Y del botón de notificaciones
+            if (notificationsRef.current &&
+                !notificationsRef.current.contains(event.target) &&
                 !event.target.closest('.notification-bell-container')) {
                 setShowNotifications(false);
             }
         }
 
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [notificationsRef]);
+        function handleScroll(event) {
+            // Solo cerrar notificaciones si el scroll NO es dentro del panel de notificaciones
+            if (notificationsRef.current &&
+                !notificationsRef.current.contains(event.target) &&
+                !event.target.closest('.notifications-body')) {
+                setShowNotifications(false);
+            }
+        }
+
+        function handleResize() {
+            // Cerrar notificaciones al cambiar el tamaño de pantalla
+            setShowNotifications(false);
+        }
+
+        function handleEscapeKey(event) {
+            // Cerrar con la tecla Escape
+            if (event.key === 'Escape') {
+                setShowNotifications(false);
+            }
+        }
+
+        if (showNotifications) {
+            document.addEventListener('mousedown', handleClickOutside);
+            document.addEventListener('scroll', handleScroll, true);
+            window.addEventListener('resize', handleResize);
+            document.addEventListener('keydown', handleEscapeKey);
+
+            return () => {
+                document.removeEventListener('mousedown', handleClickOutside);
+                document.removeEventListener('scroll', handleScroll, true);
+                window.removeEventListener('resize', handleResize);
+                document.removeEventListener('keydown', handleEscapeKey);
+            };
+        }
+    }, [showNotifications]);
 
     useEffect(() => {
         function handleClickOutside(event) {
@@ -148,6 +181,74 @@ const Navbar = ({ userOptions = [] }) => {
         }
     };
 
+    // Función para renderizar el panel de notificaciones
+    const renderNotificationsPanel = () => (
+        <div className="notifications-panel" ref={notificationsRef}>
+            <div className="notifications-header">
+                <h6 className="mb-0">Notificaciones</h6>
+                {unreadCount > 0 && (
+                    <button
+                        className="btn btn-sm text-primary p-0 border-0"
+                        onClick={markAllAsRead}
+                        style={{ fontSize: '0.8rem' }}
+                    >
+                        Marcar todas como leídas
+                    </button>
+                )}
+            </div>
+
+            <div
+                className="notifications-body"
+                onScroll={(e) => e.stopPropagation()} // Prevenir que el scroll se propague
+            >
+                {isLoadingNotifications ? (
+                    <div className="notifications-loading">
+                        <div className="spinner-border text-primary" role="status">
+                            <span className="visually-hidden">Cargando...</span>
+                        </div>
+                        <span>Cargando notificaciones...</span>
+                    </div>
+                ) : notifications.length > 0 ? (
+                    <div className="notification-list">
+                        {notifications.map(notification => (
+                            <div
+                                key={notification.id}
+                                className={`notification-item ${!notification.leida ? 'unread' : ''}`}
+                                onClick={() => handleNotificationClick(notification)}
+                            >
+                                <div className="notification-content">
+                                    <div className="notification-title">
+                                        {notification.titulo}
+                                    </div>
+                                    <div className="notification-message">
+                                        {notification.mensaje}
+                                    </div>
+                                    <div className="notification-time">
+                                        {formatTime(notification.fecha_creacion)}
+                                    </div>
+                                </div>
+                                {!notification.leida && (
+                                    <button
+                                        className="btn btn-sm mark-read-btn"
+                                        onClick={(e) => markAsRead(notification.id, e)}
+                                        title="Marcar como leída"
+                                    >
+                                        <i className="bi bi-check2-all"></i>
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="empty-notifications">
+                        <i className="bi bi-bell-slash"></i>
+                        <p>No tienes notificaciones</p>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+
     return (
         <>
             <nav className="navbar navbar-expand-lg navbar-dark shadow-sm sticky-top" style={{ backgroundColor: '#283048' }}>
@@ -163,11 +264,13 @@ const Navbar = ({ userOptions = [] }) => {
                         </div>
                     </button>
 
-                    {/* Botón de notificaciones con animación */}
-                    <div className="ms-auto notification-bell-container">
+                    {/* Botón de notificaciones con animación - MEJORADO */}
+                    <div className="ms-auto notification-bell-container position-relative">
                         <button
                             className="btn btn-link text-white border-0 p-0 nav-icon-button"
                             onClick={() => setShowNotifications(!showNotifications)}
+                            aria-label="Notificaciones"
+                            aria-expanded={showNotifications}
                         >
                             <div className="icon-circle position-relative">
                                 <i className="bi bi-bell-fill fs-4 notification-bell"></i>
@@ -178,67 +281,7 @@ const Navbar = ({ userOptions = [] }) => {
                         </button>
 
                         {/* Panel de notificaciones */}
-                        {showNotifications && (
-                            <div className="notifications-panel" ref={notificationsRef}>
-                                <div className="notifications-header">
-                                    <h6 className="mb-0">Notificaciones</h6>
-                                    {unreadCount > 0 && (
-                                        <button
-                                            className="btn btn-sm text-primary p-0 border-0"
-                                            onClick={markAllAsRead}
-                                        >
-                                            Marcar todas como leídas
-                                        </button>
-                                    )}
-                                </div>
-
-                                <div className="notifications-body">
-                                    {isLoadingNotifications ? (
-                                        <div className="text-center p-3">
-                                            <div className="spinner-border spinner-border-sm text-primary" role="status">
-                                                <span className="visually-hidden">Cargando...</span>
-                                            </div>
-                                        </div>
-                                    ) : notifications.length > 0 ? (
-                                        <div className="notification-list">
-                                            {notifications.map(notification => (
-                                                <div
-                                                    key={notification.id}
-                                                    className={`notification-item ${!notification.leida ? 'unread' : ''}`}
-                                                    onClick={() => handleNotificationClick(notification)}
-                                                >
-                                                    <div className="notification-content">
-                                                        <div className="notification-title">
-                                                            {notification.titulo}
-                                                        </div>
-                                                        <div className="notification-message">
-                                                            {notification.mensaje}
-                                                        </div>
-                                                        <div className="notification-time">
-                                                            {formatTime(notification.fecha_creacion)}
-                                                        </div>
-                                                    </div>
-                                                    {!notification.leida && (
-                                                        <button
-                                                            className="btn btn-sm mark-read-btn"
-                                                            onClick={(e) => markAsRead(notification.id, e)}
-                                                            title="Marcar como leída"
-                                                        >
-                                                            <i className="bi bi-check2-all"></i>
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="empty-notifications">
-                                            <i className="bi bi-bell-slash"></i>
-                                            <p>No tienes notificaciones</p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
+                        {showNotifications && renderNotificationsPanel()}
                     </div>
                 </div>
             </nav>
