@@ -1,5 +1,5 @@
 import React, {useState, useCallback, useEffect} from 'react';
-import utnLogo from '../../assets/UTN_logo.jpg';
+import utnLogo from '../../assets/d67bf100-ca44-453c-8737-aeffbe5d0c18.png';
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import _ from 'lodash';
 import '../Login/LoginButton.css';

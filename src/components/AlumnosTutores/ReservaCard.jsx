@@ -1,4 +1,4 @@
-// Updated ReservaCard.jsx with actions tracking - PRODUCTION VERSION
+// Updated ReservaCard.jsx with Bypass support
 
 import React from 'react';
 
@@ -24,7 +24,8 @@ const ReservaCard = ({
                          handlePaymentModal,
                          handleConfirmEfectivoPago,
                          handleOpenRatingModal,
-                         startVideoCall
+                         startVideoCall,
+                         bypassValidations = false // NUEVO PROP
                      }) => {
     const formatDateTime = (date, time) => {
         const [year, month, day] = date.split('-');
@@ -139,6 +140,25 @@ const ReservaCard = ({
 
     const getClassTimeInfo = (reserva) => {
         if (activeTab !== 'tutor' || reserva.estado !== 'confirmada') return null;
+
+        // BYPASS: Mostrar mensaje especial si está en modo testing
+        if (bypassValidations) {
+            const action = reservaActions[reserva.id];
+            if (action && action.tutor_opened && action.estudiante_opened) {
+                return (
+                    <div className="alert alert-success alert-sm mt-2 mb-0" role="alert">
+                        <i className="bi bi-check-circle-fill me-1"></i>
+                        <small>🧪 [TEST MODE] ¡Clase realizada! Puedes completarla.</small>
+                    </div>
+                );
+            }
+            return (
+                <div className="alert alert-warning alert-sm mt-2 mb-0" role="alert">
+                    <i className="bi bi-shield-slash me-1"></i>
+                    <small>🧪 [TEST MODE] Validaciones horarias desactivadas</small>
+                </div>
+            );
+        }
 
         const now = new Date();
         const [year, month, day] = reserva.fecha.split('-');
@@ -273,18 +293,23 @@ const ReservaCard = ({
             return false;
         }
 
-        if (activeTab === 'estudiante' && reserva.estado === 'confirmada') {
+        if (reserva.estado === 'confirmada') {
             return true;
-        }
-
-        if (activeTab === 'tutor' && reserva.estado === 'confirmada') {
-            return reserva.canStartClass || !reserva.isExpired;
         }
 
         return false;
     };
 
     const getVideoCallButtonText = (reserva) => {
+        // BYPASS: Texto simplificado en modo testing
+        if (bypassValidations) {
+            if (activeTab === 'tutor') {
+                return "🧪 Iniciar Clase (TEST)";
+            } else {
+                return "🧪 Acceder (TEST)";
+            }
+        }
+
         // Función helper para calcular tiempo hasta poder acceder
         const getTimeUntilAccess = (reserva) => {
             const now = new Date();
@@ -327,9 +352,20 @@ const ReservaCard = ({
 
         return "Acceder a Videollamada";
     };
+
     const getStudentVideoCallInfo = (reserva) => {
         if (activeTab !== 'estudiante' || reserva.estado !== 'confirmada' || !shouldShowVideoCallButton(reserva)) {
             return null;
+        }
+
+        // BYPASS: Mostrar mensaje especial si está en modo testing
+        if (bypassValidations) {
+            return (
+                <div className="alert alert-warning alert-sm mt-2 mb-0" role="alert">
+                    <i className="bi bi-shield-slash me-1"></i>
+                    <small>🧪 [TEST MODE] Puedes acceder sin restricciones horarias</small>
+                </div>
+            );
         }
 
         const now = new Date();
@@ -358,21 +394,6 @@ const ReservaCard = ({
         );
 
         const allowStartTime = new Date(startTime.getTime() - 15 * 60 * 1000);
-
-        // DEBUG para reserva específica
-        if (reserva.id === 1034) { // Cambiar por el ID de la reserva actual
-            console.log('=== DEBUG getStudentVideoCallInfo ===');
-            console.log('Input hora_inicio:', reserva.hora_inicio);
-            console.log('Input hora_fin:', reserva.hora_fin);
-            console.log('Parsed inicio:', { horaInicio, minutoInicio });
-            console.log('Parsed fin:', { horaFin, minutoFin });
-            console.log('Now:', now);
-            console.log('StartTime:', startTime);
-            console.log('EndTime:', endTime);
-            console.log('AllowStartTime:', allowStartTime);
-            console.log('Minutes until end:', Math.floor((endTime - now) / (1000 * 60)));
-            console.log('======================================');
-        }
 
         // Si puede acceder ahora
         if (now >= allowStartTime && now <= endTime) {
@@ -403,6 +424,17 @@ const ReservaCard = ({
     };
 
     const isVideoCallButtonDisabled = (reserva) => {
+        // BYPASS: Si está activado, nunca deshabilitar el botón
+        if (bypassValidations) {
+            return false;
+        }
+
+        // USAR LA NUEVA PROPIEDAD canAccessVideoCall si está disponible
+        if (reserva.canAccessVideoCall !== undefined) {
+            return !reserva.canAccessVideoCall;
+        }
+
+        // Fallback a la lógica original
         const canAccessVideoCall = (reserva) => {
             const now = new Date();
             const [year, month, day] = reserva.fecha.split('-');
@@ -448,7 +480,6 @@ const ReservaCard = ({
         return true;
     };
 
-
     // Simple function to open modal - Action recording happens in modal
     const handleStartVideoCall = (reserva) => {
         startVideoCall(reserva);
@@ -456,7 +487,14 @@ const ReservaCard = ({
 
     return (
         <div className="col-12 col-md-6 col-lg-4">
-            <div className={`materia-card ${isPastReserva ? 'opacity-75' : ''} ${reserva.actualStatus === 'expirada' ? 'border-secondary' : ''}`}>
+            <div className={`materia-card ${isPastReserva ? 'opacity-75' : ''} ${reserva.actualStatus === 'expirada' ? 'border-secondary' : ''} ${bypassValidations ? 'border-warning border-2' : ''}`}>
+                {/* INDICADOR VISUAL DE BYPASS */}
+                {bypassValidations && (
+                    <div className="bg-warning bg-opacity-25 p-1 text-center small fw-bold mb-2">
+                        🧪 MODO TESTING ACTIVO
+                    </div>
+                )}
+
                 <div className="d-flex justify-content-between align-items-start mb-2">
                     <div>
                         <h3 className="materia-title">

@@ -36,8 +36,14 @@ class SidebarOptionsService {
             "roles": ["alumno&tutor","superAdmin"],
             "path": "/faq"
         },
-
+        {
+            "icon": "shield-check",
+            "name": "Términos y Condiciones",
+            "roles": ["alumno&tutor","superAdmin","alumno"],
+            "path": "/terminoscondiciones"
+        }
     ]
+
     loadSideBarOptionsBasedOnRole(roles) {
         if (Array.isArray(roles)) {
             return this.sideBarOptions.filter(option => {

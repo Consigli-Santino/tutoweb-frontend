@@ -1,7 +1,5 @@
 import React from 'react';
 import TutoresCarrusel from "../tutors/TutoresCarrusel/TutoresCarrusel.jsx";
-import BubblePopGame from "./BubblePopGame.jsx";
-
 const Home = () => {
     return(
         <>
@@ -63,7 +61,6 @@ const Home = () => {
                         </div>
                     </div>
                 </div>
-
                 <div className="home-bar-spacing"></div>
             </div>
         </>

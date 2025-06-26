@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useEntidades } from '../../context/EntidadesContext.jsx';
 import ApiService from '../../services/ApiService';
+import useReservaActions from '../../hooks/useReservaActions';
 import '../../commonTables.css';
 import ReservaCard from './ReservaCard';
 import PaymentModal from './PaymentModal';
@@ -10,12 +11,16 @@ import VideoCallModal from './VideoCallModal';
 import CalificacionModal from './CalificacionModal';
 import DateRangeFilter from '../Dashboard/DateRangeFilter';
 import CustomSelect from '../../components/CustomInputs/CustomSelect.jsx';
+import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 
 const ReservasContainer = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { materias } = useEntidades();
     const [searchParams] = useSearchParams();
+
+    // NUEVO ESTADO PARA BYPASS DE VALIDACIONES
+    const [bypassValidations, setBypassValidations] = useState(false);
 
     // Role determinations
     const isTutor = useMemo(() => {
@@ -33,7 +38,7 @@ const ReservasContainer = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(null);
-
+    const activeTabRef = useRef(activeTab);
     // State for reserva actions
     const [reservaActions, setReservaActions] = useState({});
 
@@ -47,6 +52,7 @@ const ReservasContainer = () => {
         fechaDesde.setDate(fechaDesde.getDate() - 20);
         return fechaDesde.toISOString().split('T')[0];
     });
+
     const [fechaHasta, setFechaHasta] = useState(() => {
         const fechaHasta = new Date();
         fechaHasta.setDate(fechaHasta.getDate() + 10);
@@ -60,38 +66,64 @@ const ReservasContainer = () => {
     const [activeReserva, setActiveReserva] = useState(null);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [currentReserva, setCurrentReserva] = useState(null);
-    const [isProcessingPayment, setIsProcessingPayment] = useState(false);
     const [reservaPagos, setReservaPagos] = useState({});
     const [showCalificacionModal, setShowCalificacionModal] = useState(false);
     const [reservaToRate, setReservaToRate] = useState(null);
-    // Validation functions
+    useEffect(() => {
+        activeTabRef.current = activeTab;
+    }, [activeTab]);
+
+    // ===== HOOKS PERSONALIZADOS =====
+
+    // Callbacks para el hook de acciones
+    const handleActionSuccess = useCallback((message, details) => {
+        setSuccess(message);
+        console.log('✅ Acción exitosa:', details);
+
+        // Refrescar datos después de una acción exitosa
+        fetchReservas();
+
+        // Auto-hide success message after 5 seconds
+        setTimeout(() => setSuccess(null), 5000);
+    }, []);
+
+    const handleActionError = useCallback((message, details) => {
+        setError(message);
+        console.error('❌ Error en acción:', details);
+
+        // Auto-hide error message after 8 seconds
+        setTimeout(() => setError(null), 8000);
+    }, []);
+
+    // Hook personalizado para acciones de reserva
+    const {
+        isProcessing: isActionProcessing,
+        processingAction,
+        cancelarReserva,
+        confirmarReserva,
+        completarReserva,
+        procesarPago,
+        confirmarPagoEfectivo,
+        enviarCalificacion,
+        isActionProcessing: checkActionProcessing
+    } = useReservaActions(activeTab, handleActionSuccess, handleActionError);
+
+    // ===== UTILITY FUNCTIONS =====
+
     const isReservaExpired = (reserva) => {
+        // Si bypass está activado, nunca considerar expired para propósitos de testing
+        if (bypassValidations) return false;
+
         try {
-            // La hora_fin ya viene con formato HH:mm:ss, no agregar :00 extra
             const reservaDateTimeString = `${reserva.fecha}T${reserva.hora_fin}`;
             const reservaDateTime = new Date(reservaDateTimeString);
 
-            // Verificar si la fecha es válida
             if (isNaN(reservaDateTime.getTime())) {
                 console.error('Invalid date created from:', reservaDateTimeString);
                 return false;
             }
 
             const now = new Date();
-
-            // Debug logging temporal
-            if (reserva.id === 1033 || reserva.id === 1043) {
-                console.log(`=== DEBUGGING RESERVA ${reserva.id} ===`);
-                console.log('Input fecha:', reserva.fecha);
-                console.log('Input hora_fin:', reserva.hora_fin);
-                console.log('DateTime string:', reservaDateTimeString);
-                console.log('Parsed reserva time:', reservaDateTime);
-                console.log('Current time:', now);
-                console.log('Now > ReservaTime:', now > reservaDateTime);
-                console.log('Time difference (minutes):', (now.getTime() - reservaDateTime.getTime()) / (1000 * 60));
-                console.log('===========================');
-            }
-
             return now > reservaDateTime;
         } catch (error) {
             console.error('Error checking if reserva is expired:', error);
@@ -104,7 +136,6 @@ const ReservasContainer = () => {
         if (isExpired && reserva.estado === 'pendiente') {
             return 'expirada';
         }
-
         return reserva.estado;
     };
 
@@ -132,17 +163,16 @@ const ReservasContainer = () => {
         return null;
     };
 
-
-    // FIX para canStartClass en ReservasContainer.jsx
-// Usar el MISMO método que getClassTimeInfo (parseando minutos correctamente)
-
     const canStartClass = (reserva) => {
+        // Si bypass está activado, permitir iniciar clase si es tutor y está confirmada
+        if (bypassValidations) {
+            return activeTab === 'tutor' && reserva.estado === 'confirmada';
+        }
+
         if (activeTab !== 'tutor' || reserva.estado !== 'confirmada') return false;
 
         const now = new Date();
         const [year, month, day] = reserva.fecha.split('-');
-
-        // FIX: Parsear hora Y minutos (igual que en getClassTimeInfo)
         const [horaInicio, minutoInicio] = reserva.hora_inicio.split(':');
         const [horaFin, minutoFin] = reserva.hora_fin.split(':');
 
@@ -165,46 +195,43 @@ const ReservasContainer = () => {
         );
 
         const allowStartTime = new Date(startTime.getTime() - 15 * 60 * 1000);
-
-        // DEBUG LOGS para la reserva 1033
-        if (reserva.id === 1033) {
-            console.log('=== DEBUG canStartClass RESERVA 1033 (FINAL FIX) ===');
-            console.log('Input hora_inicio:', reserva.hora_inicio);
-            console.log('Input hora_fin:', reserva.hora_fin);
-            console.log('Parsed inicio:', { horaInicio, minutoInicio });
-            console.log('Parsed fin:', { horaFin, minutoFin });
-            console.log('Now:', now);
-            console.log('StartTime:', startTime);
-            console.log('EndTime:', endTime);
-            console.log('AllowStartTime:', allowStartTime);
-            console.log('now >= allowStartTime:', now >= allowStartTime);
-            console.log('now <= endTime:', now <= endTime);
-            console.log('Can start class:', now >= allowStartTime && now <= endTime);
-            console.log('===============================================');
-        }
-
         return now >= allowStartTime && now <= endTime;
     };
 
     const getTimeUntilClass = (reserva) => {
+        // Si bypass está activado, no mostrar tiempo restante
+        if (bypassValidations) return null;
+
         const now = new Date();
-        const reservaDate = new Date(reserva.fecha);
-        const [horaInicio] = reserva.hora_inicio.split(':');
-        const [horaFin] = reserva.hora_fin.split(':');
+        const [year, month, day] = reserva.fecha.split('-');
 
-        const startTime = new Date(reservaDate);
-        startTime.setHours(parseInt(horaInicio), 0, 0, 0);
+        // FIX: Parsear tanto horas como minutos
+        const [horaInicio, minutoInicio] = reserva.hora_inicio.split(':');
+        const [horaFin, minutoFin] = reserva.hora_fin.split(':');
 
-        const endTime = new Date(reservaDate);
-        endTime.setHours(parseInt(horaFin), 0, 0, 0);
+        const startTime = new Date(
+            parseInt(year),
+            parseInt(month) - 1,
+            parseInt(day),
+            parseInt(horaInicio),
+            parseInt(minutoInicio), // ← FIX: Agregar minutos
+            0
+        );
+
+        const endTime = new Date(
+            parseInt(year),
+            parseInt(month) - 1,
+            parseInt(day),
+            parseInt(horaFin),
+            parseInt(minutoFin), // ← FIX: Agregar minutos
+            0
+        );
 
         const allowStartTime = new Date(startTime.getTime() - 15 * 60 * 1000);
-        if (now > endTime) {
-            return null;
-        }
-        if (now >= allowStartTime && now <= endTime) {
-            return null; //
-        }
+
+        if (now > endTime) return null;
+        if (now >= allowStartTime && now <= endTime) return null;
+
         if (now < allowStartTime) {
             const timeDiff = allowStartTime - now;
             const hours = Math.floor(timeDiff / (1000 * 60 * 60));
@@ -219,7 +246,8 @@ const ReservasContainer = () => {
         return null;
     };
 
-    // Action validation functions
+    // ===== VALIDATION FUNCTIONS =====
+
     const canCancelReserva = (reserva) => {
         const actualStatus = reserva.actualStatus || reserva.estado;
 
@@ -231,29 +259,48 @@ const ReservasContainer = () => {
             return false;
         }
 
+        // Si bypass está activado, permitir cancelar (ignorar restricción horaria)
+        if (bypassValidations) {
+            return !checkActionProcessing('cancelar', reserva.id);
+        }
+
         const reservaDateTime = new Date(`${reserva.fecha}T${reserva.hora_inicio}`);
         const now = new Date();
         const hoursBeforeLimit = 2;
         const limitTime = new Date(reservaDateTime.getTime() - (hoursBeforeLimit * 60 * 60 * 1000));
 
-        return now < limitTime;
+        return now < limitTime && !checkActionProcessing('cancelar', reserva.id);
     };
 
     const canConfirmReserva = (reserva) => {
         const actualStatus = reserva.actualStatus || reserva.estado;
-        return activeTab === 'tutor' && actualStatus === 'pendiente' && !reserva.isExpired;
+        return activeTab === 'tutor' &&
+            actualStatus === 'pendiente' &&
+            !reserva.isExpired &&
+            !checkActionProcessing('confirmar', reserva.id);
     };
 
     const canCompleteReserva = (reserva) => {
         const actualStatus = reserva.actualStatus || reserva.estado;
         const action = reservaActions[reserva.id];
-        // Solo tutores pueden completar
+
         if (activeTab !== 'tutor') return false;
+        if (actualStatus !== 'confirmada') return false;
+        if (checkActionProcessing('completar', reserva.id)) return false;
 
-        // Solo reservas confirmadas y expiradas
-        if (actualStatus !== 'confirmada' || !reserva.isExpired) return false;
+        // Si bypass está activado, solo verificar que ambos hayan abierto la videollamada
+        if (bypassValidations) {
+            // Para testing, permitir completar si ambos han abierto la videollamada
+            // O si no hay acción registrada aún (para permitir testing sin videollamada)
+            if (!action) {
+                return true; // Permitir completar sin restricciones en modo test
+            }
+            return action.tutor_opened && action.estudiante_opened;
+        }
 
-        // Verificar si ambos se conectaron a la videollamada
+        // Validaciones normales
+        if (!reserva.isExpired) return false;
+
         if (!action || !action.tutor_opened || !action.estudiante_opened) {
             return false;
         }
@@ -265,29 +312,18 @@ const ReservasContainer = () => {
         const pago = reservaPagos[reserva.id];
         const action = reservaActions[reserva.id];
 
-        // DEBUG para reserva 1033
-        if (reserva.id === 1033) {
-            console.log('=== DEBUG canPayReserva RESERVA 1033 ===');
-            console.log('activeTab:', activeTab);
-            console.log('estado:', reserva.estado);
-            console.log('isExpired:', reserva.isExpired);
-            console.log('action:', action);
-            console.log('tutor_opened:', action?.tutor_opened);
-            console.log('estudiante_opened:', action?.estudiante_opened);
-            console.log('pago:', pago);
-            console.log('Can pay (completada):', reserva.estado === 'completada' && (!pago || pago.estado !== 'completado'));
-            console.log('Can pay (expired+connected):', reserva.estado === 'confirmada' && reserva.isExpired && action?.tutor_opened && action?.estudiante_opened && (!pago || pago.estado !== 'completado'));
-            console.log('========================================');
-        }
-
         if (activeTab !== 'estudiante') return false;
+        if (checkActionProcessing('pago', reserva.id)) return false;
 
-        // Opción 1: Ya está completada (lógica actual)
         if (reserva.estado === 'completada') {
             return !pago || pago.estado !== 'completado';
         }
 
-        // Opción 2: Clase terminada Y ambos se conectaron (NUEVA LÓGICA)
+        // Si bypass está activado, permitir pagar reservas confirmadas inmediatamente
+        if (bypassValidations && reserva.estado === 'confirmada') {
+            return !pago || pago.estado !== 'completado';
+        }
+
         if (reserva.estado === 'confirmada' && reserva.isExpired) {
             if (action && action.tutor_opened && action.estudiante_opened) {
                 return !pago || pago.estado !== 'completado';
@@ -303,7 +339,10 @@ const ReservasContainer = () => {
         }
 
         const pago = reservaPagos[reserva.id];
-        return pago && pago.metodo_pago === 'efectivo' && pago.estado === 'pendiente';
+        return pago &&
+            pago.metodo_pago === 'efectivo' &&
+            pago.estado === 'pendiente' &&
+            !checkActionProcessing('confirmar_pago', pago.id);
     };
 
     const canRateReserva = (reserva) => {
@@ -316,15 +355,20 @@ const ReservasContainer = () => {
             return false;
         }
 
-        return reserva.calificado !== true;
+        return reserva.calificado !== true && !checkActionProcessing('calificar', reserva.id);
     };
 
     const isPastReserva = (reserva) => {
+        // Si bypass está activado, nunca considerar como pasada para propósitos de testing
+        if (bypassValidations) return false;
+
         const reservaDateTime = new Date(`${reserva.fecha}T${reserva.hora_fin}`);
         const now = new Date();
         return now > reservaDateTime;
     };
-    // Function to fetch reserva actions
+
+    // ===== API FUNCTIONS =====
+
     const fetchReservaActions = async (reservaIds) => {
         if (!reservaIds || reservaIds.length === 0) {
             setReservaActions({});
@@ -346,7 +390,6 @@ const ReservasContainer = () => {
         }
     };
 
-    // Function to record video call action
     const recordVideoCallAction = async (reservaId) => {
         try {
             const response = await ApiService.recordVideoCallAction(reservaId);
@@ -365,7 +408,6 @@ const ReservasContainer = () => {
         }
     };
 
-    // Apply validations to reservations
     const processReservasWithValidations = (reservasList) => {
         return reservasList.map(reserva => {
             const pago = reservaPagos[reserva.id];
@@ -374,11 +416,47 @@ const ReservasContainer = () => {
             const canStart = canStartClass(reserva);
             const timeUntil = getTimeUntilClass(reserva);
 
+            // Nueva validación para acceso a videollamada (tanto tutor como estudiante)
+            const canAccessVideo = bypassValidations
+                ? reserva.estado === 'confirmada'
+                : (activeTab === 'tutor' ? canStart : (
+                    activeTab === 'estudiante' && reserva.estado === 'confirmada' ? (() => {
+                        const now = new Date();
+                        const [year, month, day] = reserva.fecha.split('-');
+                        const [horaInicio, minutoInicio] = reserva.hora_inicio.split(':');
+                        const [horaFin, minutoFin] = reserva.hora_fin.split(':');
+
+                        const startTime = new Date(
+                            parseInt(year),
+                            parseInt(month) - 1,
+                            parseInt(day),
+                            parseInt(horaInicio),
+                            parseInt(minutoInicio),
+                            0
+                        );
+
+                        const endTime = new Date(
+                            parseInt(year),
+                            parseInt(month) - 1,
+                            parseInt(day),
+                            parseInt(horaFin),
+                            parseInt(minutoFin),
+                            0
+                        );
+
+                        const allowStartTime = new Date(startTime.getTime() - 15 * 60 * 1000);
+                        const allowEndTime = new Date(endTime.getTime() + 15 * 60 * 1000);
+
+                        return now >= allowStartTime && now <= allowEndTime;
+                    })() : false
+                ));
+
             return {
                 ...reserva,
                 actualStatus,
                 paymentWarning,
                 canStartClass: canStart,
+                canAccessVideoCall: canAccessVideo,
                 timeUntilClass: timeUntil,
                 isExpired: isReservaExpired(reserva)
             };
@@ -444,7 +522,8 @@ const ReservasContainer = () => {
         try {
             let response;
 
-            if (activeTab === 'estudiante') {
+            // Usar activeTabRef.current en lugar de activeTab
+            if (activeTabRef.current === 'estudiante') {
                 response = await ApiService.fetchReservasDetalladasByEstudiante(fromDate, toDate);
 
                 if (response.success) {
@@ -492,7 +571,212 @@ const ReservasContainer = () => {
             setIsLoading(false);
         }
     };
-    // Effects
+
+    // ===== ACTION HANDLERS - USANDO EL HOOK PERSONALIZADO =====
+
+    const handleCancelReserva = async (id) => {
+        setConfirmActionId(null);
+        setActionType(null);
+        return cancelarReserva(id);
+    };
+
+    const handleConfirmReserva = async (id) => {
+        setConfirmActionId(null);
+        setActionType(null);
+        return confirmarReserva(id);
+    };
+
+    const handleCompleteReserva = async (id) => {
+        setConfirmActionId(null);
+        setActionType(null);
+        return completarReserva(id);
+    };
+
+    // ===== PAYMENT HANDLERS =====
+
+    const handlePaymentModal = (reserva) => {
+        setCurrentReserva(reserva);
+        setShowPaymentModal(true);
+    };
+
+    const handleProcessPayment = async (reserva, method) => {
+        try {
+            await procesarPago(reserva, method);
+            setShowPaymentModal(false);
+            // Refrescar el pago específico después del procesamiento
+            setTimeout(() => {
+                fetchPagoByReserva(reserva.id);
+            }, 1000);
+        } catch (error) {
+            // Error ya manejado por el hook
+            setShowPaymentModal(false);
+        }
+    };
+
+    const handleConfirmEfectivoPago = async (pagoId) => {
+        setConfirmActionId(null);
+        setActionType(null);
+        return confirmarPagoEfectivo(pagoId);
+    };
+
+    // ===== RATING HANDLERS =====
+
+    const handleOpenRatingModal = (reserva) => {
+        setReservaToRate(reserva);
+        setShowCalificacionModal(true);
+    };
+
+    const handleSubmitRating = async (rating, comment) => {
+        if (!reservaToRate) return;
+
+        try {
+            await enviarCalificacion(reservaToRate, rating, comment, {
+                userId: user.id
+            });
+
+            // Actualizar estado local
+            setReservas(prevReservas =>
+                prevReservas.map(reserva =>
+                    reserva.id === reservaToRate.id
+                        ? { ...reserva, calificado: true }
+                        : reserva
+                )
+            );
+
+            setShowCalificacionModal(false);
+            setReservaToRate(null);
+        } catch (error) {
+            // Error ya manejado por el hook
+            setShowCalificacionModal(false);
+            setReservaToRate(null);
+        }
+    };
+
+    // ===== VIDEO CALL HANDLERS =====
+
+    const startVideoCall = (reserva) => {
+        // Si bypass está activado, omitir todas las validaciones horarias
+        if (!bypassValidations) {
+            // Validaciones para tutor
+            if (activeTab === 'tutor' && !reserva.canStartClass) {
+                const timeUntil = reserva.timeUntilClass;
+                if (timeUntil) {
+                    setError(`No puedes iniciar la clase aún. Faltan ${timeUntil} para que puedas acceder.`);
+                    return;
+                } else if (reserva.isExpired) {
+                    setError("Esta clase ya ha terminado. No puedes acceder a la sala virtual.");
+                    return;
+                }
+            }
+
+            // Validaciones para estudiante (normalmente también tienen restricciones horarias)
+            if (activeTab === 'estudiante') {
+                const now = new Date();
+                const [year, month, day] = reserva.fecha.split('-');
+                const [horaInicio, minutoInicio] = reserva.hora_inicio.split(':');
+                const [horaFin, minutoFin] = reserva.hora_fin.split(':');
+
+                const startTime = new Date(
+                    parseInt(year),
+                    parseInt(month) - 1,
+                    parseInt(day),
+                    parseInt(horaInicio),
+                    parseInt(minutoInicio),
+                    0
+                );
+
+                const endTime = new Date(
+                    parseInt(year),
+                    parseInt(month) - 1,
+                    parseInt(day),
+                    parseInt(horaFin),
+                    parseInt(minutoFin),
+                    0
+                );
+
+                const allowStartTime = new Date(startTime.getTime() - 15 * 60 * 1000);
+                const allowEndTime = new Date(endTime.getTime() + 15 * 60 * 1000);
+
+                if (now < allowStartTime) {
+                    const timeDiff = allowStartTime - now;
+                    const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+                    const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                    const timeUntil = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+                    setError(`No puedes acceder a la clase aún. Faltan ${timeUntil} para que puedas acceder.`);
+                    return;
+                }
+
+                if (now > allowEndTime) {
+                    setError("Esta clase ya ha terminado. No puedes acceder a la sala virtual.");
+                    return;
+                }
+            }
+        }
+
+        if (!reserva.sala_virtual) {
+            setError("No hay sala virtual disponible para esta reserva.");
+            return;
+        }
+
+        let roomUrl = reserva.sala_virtual;
+        if (!roomUrl.startsWith('http')) {
+            roomUrl = `https://meet.jit.si/${roomUrl}`;
+        }
+
+        setActiveJitsiRoom(roomUrl);
+        setActiveReserva(reserva);
+        setShowJitsiModal(true);
+    };
+
+    const closeVideoCall = () => {
+        setShowJitsiModal(false);
+        setTimeout(() => {
+            setActiveJitsiRoom(null);
+            setActiveReserva(null);
+        }, 300);
+    };
+
+    // ===== FILTER FUNCTIONS =====
+
+    const filterReservasByMateria = () => {
+        if (!materiaFilter) {
+            setFilteredReservas(reservas);
+        } else {
+            const filtered = reservas.filter(reserva =>
+                reserva.materia && reserva.materia.id.toString() === materiaFilter
+            );
+            setFilteredReservas(filtered);
+        }
+    };
+
+    const handleFilterChange = () => {
+        fetchReservas(fechaDesde, fechaHasta);
+    };
+
+    const resetDateRange = () => {
+        const fechaDesde = new Date();
+        fechaDesde.setDate(fechaDesde.getDate() - 20);
+        const newFechaDesde = fechaDesde.toISOString().split('T')[0];
+
+        const fechaHasta = new Date();
+        fechaHasta.setDate(fechaHasta.getDate() + 10);
+        const newFechaHasta = fechaHasta.toISOString().split('T')[0];
+
+        setFechaDesde(newFechaDesde);
+        setFechaHasta(newFechaHasta);
+        fetchReservas(newFechaDesde, newFechaHasta);
+    };
+
+    const resetMateriaFilter = () => {
+        setMateriaFilter('');
+    };
+
+    const handleBack = () => {
+        navigate(-1);
+    };
+
+    // ===== EFFECTS =====
+
     useEffect(() => {
         fetchReservas();
     }, [activeTab]);
@@ -539,246 +823,16 @@ const ReservasContainer = () => {
         }
     }, [searchParams, navigate]);
 
-    // Filter and utility functions
-    const filterReservasByMateria = () => {
-        if (!materiaFilter) {
-            setFilteredReservas(reservas);
-        } else {
-            const filtered = reservas.filter(reserva =>
-                reserva.materia && reserva.materia.id.toString() === materiaFilter
-            );
-            setFilteredReservas(filtered);
-        }
-    };
+    // ===== PROCESSED DATA =====
 
-    const handleFilterChange = () => {
-        fetchReservas(fechaDesde, fechaHasta);
-    };
-
-    const resetDateRange = () => {
-        const fechaDesde = new Date();
-        fechaDesde.setDate(fechaDesde.getDate() - 20);
-        const newFechaDesde = fechaDesde.toISOString().split('T')[0];
-
-        const fechaHasta = new Date();
-        fechaHasta.setDate(fechaHasta.getDate() + 10);
-        const newFechaHasta = fechaHasta.toISOString().split('T')[0];
-
-        setFechaDesde(newFechaDesde);
-        setFechaHasta(newFechaHasta);
-        fetchReservas(newFechaDesde, newFechaHasta);
-    };
-
-    const resetMateriaFilter = () => {
-        setMateriaFilter('');
-    };
-
-    const handleBack = () => {
-        navigate(-1);
-    };
-
-    // Reserva action handlers
-    const handleCancelReserva = async (id) => {
-        await handleReservaAction(id, 'cancelar');
-    };
-
-    const handleConfirmReserva = async (id) => {
-        await handleReservaAction(id, 'confirmar');
-    };
-
-    const handleCompleteReserva = async (id) => {
-        await handleReservaAction(id, 'completar');
-    };
-
-    const handleReservaAction = async (id, action) => {
-        setIsLoading(true);
-        setError(null);
-        setSuccess(null);
-        setConfirmActionId(null);
-        setActionType(null);
-
-        try {
-            let response;
-            let successMessage;
-
-            switch (action) {
-                case 'cancelar':
-                    response = await ApiService.updateReserva(id, { estado: 'cancelada' });
-                    successMessage = "Reserva cancelada correctamente";
-                    break;
-                case 'confirmar':
-                    response = await ApiService.updateReserva(id, { estado: 'confirmada' });
-                    successMessage = "Reserva confirmada correctamente";
-                    break;
-                case 'completar':
-                    response = await ApiService.updateReserva(id, { estado: 'completada' });
-                    successMessage = "Reserva marcada como completada correctamente";
-                    break;
-                default:
-                    throw new Error('Acción no reconocida');
-            }
-
-            if (response.success) {
-                setSuccess(successMessage);
-                fetchReservas();
-                setTimeout(() => setSuccess(null), 3000);
-            } else {
-                throw new Error(response.message || `Error al ${action} la reserva`);
-            }
-        } catch (err) {
-            setError(`Error: ${err.message}`);
-            console.error(`Error ${action} reserva:`, err);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-    // Payment handlers
-    const handlePaymentModal = (reserva) => {
-        setCurrentReserva(reserva);
-        setShowPaymentModal(true);
-    };
-
-    const handleProcessPayment = async (reserva, method) => {
-        setIsProcessingPayment(true);
-        setError(null);
-
-        try {
-            const pagoData = {
-                reserva_id: reserva.id,
-                monto: reserva.servicio.precio,
-                metodo_pago: method
-            };
-
-            const response = await ApiService.createPago(pagoData);
-
-            if (response.success) {
-                if (method === 'mercado_pago' && response.data.payment_url) {
-                    window.open(response.data.payment_url, '_blank');
-                }
-
-                await fetchReservas();
-                await fetchPagoByReserva(reserva.id);
-
-                setSuccess(`Pago ${method === 'efectivo' ? 'registrado' : 'iniciado'} correctamente`);
-            } else {
-                throw new Error(response.message || 'Error procesando el pago');
-            }
-        } catch (err) {
-            setError(`Error: ${err.message}`);
-            console.error("Error procesando pago:", err);
-        } finally {
-            setIsProcessingPayment(false);
-            setShowPaymentModal(false);
-        }
-    };
-
-    const handleConfirmEfectivoPago = async (pagoId) => {
-        setIsProcessingPayment(true);
-        setError(null);
-
-        try {
-            const response = await ApiService.updatePagoEstado(pagoId, 'completado');
-
-            if (response.success) {
-                await fetchReservas();
-                setSuccess("Pago confirmado correctamente");
-            } else {
-                throw new Error(response.message || 'Error confirmando el pago');
-            }
-        } catch (err) {
-            setError(`Error: ${err.message}`);
-            console.error("Error confirmando pago:", err);
-        } finally {
-            setIsProcessingPayment(false);
-            setConfirmActionId(null);
-            setActionType(null);
-        }
-    };
-
-    // Rating handlers
-    const handleOpenRatingModal = (reserva) => {
-        setReservaToRate(reserva);
-        setShowCalificacionModal(true);
-    };
-
-    const handleSubmitRating = async (rating, comment) => {
-        if (!reservaToRate) return;
-
-        try {
-            const calificacionData = {
-                reserva_id: reservaToRate.id,
-                calificador_id: user.id,
-                calificado_id: reservaToRate.tutor.id,
-                puntuacion: rating,
-                comentario: comment
-            };
-
-            const response = await ApiService.createCalificacion(calificacionData);
-
-            if (response.success) {
-                setSuccess("Calificación enviada correctamente");
-
-                setReservas(prevReservas =>
-                    prevReservas.map(reserva =>
-                        reserva.id === reservaToRate.id
-                            ? { ...reserva, calificado: true }
-                            : reserva
-                    )
-                );
-
-                reservaToRate.calificado = true;
-            } else {
-                throw new Error(response.message || 'Error enviando calificación');
-            }
-        } catch (err) {
-            setError(`Error: ${err.message}`);
-            console.error("Error enviando calificación:", err);
-        } finally {
-            setShowCalificacionModal(false);
-            setReservaToRate(null);
-        }
-    };
-
-    // Video call handlers
-    const startVideoCall = (reserva) => {
-        if (!reserva.canStartClass && activeTab === 'tutor') {
-            const timeUntil = reserva.timeUntilClass;
-            if (timeUntil) {
-                setError(`No puedes iniciar la clase aún. Faltan ${timeUntil} para que puedas acceder.`);
-                return;
-            } else if (reserva.isExpired) {
-                setError("Esta clase ya ha terminado. No puedes acceder a la sala virtual.");
-                return;
-            }
-        }
-
-        if (!reserva.sala_virtual) {
-            setError("No hay sala virtual disponible para esta reserva.");
-            return;
-        }
-
-        let roomUrl = reserva.sala_virtual;
-        if (!roomUrl.startsWith('http')) {
-            roomUrl = `https://meet.jit.si/${roomUrl}`;
-        }
-
-        setActiveJitsiRoom(roomUrl);
-        setActiveReserva(reserva);
-        setShowJitsiModal(true);
-    };
-
-    const closeVideoCall = () => {
-        setShowJitsiModal(false);
-        setTimeout(() => {
-            setActiveJitsiRoom(null);
-            setActiveReserva(null);
-        }, 300);
-    };
-
-    // Process reservations with validations
     const processedReservas = useMemo(() => {
         return processReservasWithValidations(filteredReservas);
-    }, [filteredReservas, reservaPagos, activeTab]);
+    }, [filteredReservas, reservaPagos, activeTab, bypassValidations]);
+
+    // Combinar loading states
+    const isCurrentlyLoading = isLoading || isActionProcessing;
+
+    // ===== RENDER =====
 
     return (
         <div className="container-fluid px-3 py-2">
@@ -788,13 +842,45 @@ const ReservasContainer = () => {
                         <h1 className="fw-bold fs-4 mb-0">
                             {activeTab === 'estudiante' ? 'Mis Reservas de Tutorías' : 'Gestión de Tutorías'}
                         </h1>
-                        <button
-                            className="btn btn-sm btn-outline-secondary rounded-pill"
-                            onClick={handleBack}
-                        >
-                            <i className="bi bi-arrow-left me-1"></i> Volver
-                        </button>
+                        <div className="d-flex gap-2">
+                            {/* BOTÓN DE BYPASS PARA TESTING */}
+                            <button
+                                className={`btn btn-sm ${bypassValidations ? 'btn-warning' : 'btn-outline-secondary'} rounded-pill`}
+                                onClick={() => setBypassValidations(!bypassValidations)}
+                                title="Desactivar validaciones horarias para testing"
+                                disabled={isCurrentlyLoading}
+                            >
+                                <i className={`bi ${bypassValidations ? 'bi-shield-slash' : 'bi-shield-check'} me-1`}></i>
+                                {bypassValidations ? 'Test ON' : 'Test OFF'}
+                            </button>
+
+                            <button
+                                className="btn btn-sm btn-outline-secondary rounded-pill"
+                                onClick={handleBack}
+                                disabled={isCurrentlyLoading}
+                            >
+                                <i className="bi bi-arrow-left me-1"></i> Volver
+                            </button>
+                        </div>
                     </div>
+
+                    {/* INDICADOR DE MODO BYPASS */}
+                    {bypassValidations && (
+                        <div className="alert alert-warning alert-sm mt-2 mb-0">
+                            <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                            <strong>Modo Testing:</strong> Las validaciones horarias están desactivadas.
+                            <br />
+                            <small>
+                                ✅ Iniciar clases sin restricciones horarias (tutor y estudiante)
+                                <br />
+                                ✅ Completar clases sin esperar que termine el horario
+                                <br />
+                                ✅ Pagar reservas confirmadas inmediatamente
+                                <br />
+                                ✅ Cancelar reservas sin restricción de 2 horas
+                            </small>
+                        </div>
+                    )}
                 </div>
 
                 <div className="card-body p-3 p-md-4">
@@ -806,6 +892,7 @@ const ReservasContainer = () => {
                                     <button
                                         className={`nav-link ${activeTab === 'estudiante' ? 'active' : ''}`}
                                         onClick={() => setActiveTab('estudiante')}
+                                        disabled={isCurrentlyLoading}
                                     >
                                         <i className="bi bi-person me-2"></i>
                                         Como Estudiante
@@ -815,6 +902,7 @@ const ReservasContainer = () => {
                                     <button
                                         className={`nav-link ${activeTab === 'tutor' ? 'active' : ''}`}
                                         onClick={() => setActiveTab('tutor')}
+                                        disabled={isCurrentlyLoading}
                                     >
                                         <i className="bi bi-mortarboard me-2"></i>
                                         Como Tutor
@@ -826,18 +914,52 @@ const ReservasContainer = () => {
 
                     {/* Error/success messages */}
                     {error && (
-                        <div className="alert alert-danger shadow-sm rounded-3" role="alert">
+                        <div className="alert alert-danger shadow-sm rounded-3 alert-dismissible" role="alert">
                             <i className="bi bi-exclamation-triangle-fill me-2"></i>
                             {error}
+                            <button
+                                type="button"
+                                className="btn-close"
+                                onClick={() => setError(null)}
+                                aria-label="Close"
+                            ></button>
                         </div>
                     )}
 
                     {success && (
-                        <div className="alert alert-success shadow-sm rounded-3" role="alert">
+                        <div className="alert alert-success shadow-sm rounded-3 alert-dismissible" role="alert">
                             <i className="bi bi-check-circle-fill me-2"></i>
                             {success}
+                            <button
+                                type="button"
+                                className="btn-close"
+                                onClick={() => setSuccess(null)}
+                                aria-label="Close"
+                            ></button>
                         </div>
                     )}
+
+                    {/* Processing indicator */}
+                    {isActionProcessing && processingAction && (
+                        <div className="alert alert-info shadow-sm rounded-3 d-flex align-items-center" role="alert">
+                            <div className="spinner-border spinner-border-sm me-3" role="status">
+                                <span className="visually-hidden">Procesando...</span>
+                            </div>
+                            <div>
+                                <strong>Procesando acción...</strong>
+                                <br />
+                                <small className="text-muted">
+                                    {processingAction.includes('cancelar') && 'Cancelando reserva y enviando notificaciones...'}
+                                    {processingAction.includes('confirmar') && 'Confirmando reserva y enviando notificaciones...'}
+                                    {processingAction.includes('completar') && 'Completando reserva y enviando notificaciones...'}
+                                    {processingAction.includes('pago') && 'Procesando pago...'}
+                                    {processingAction.includes('calificar') && 'Enviando calificación...'}
+                                    {processingAction.includes('email') && 'Enviando email...'}
+                                </small>
+                            </div>
+                        </div>
+                    )}
+
 
                     {/* Date filters */}
                     <DateRangeFilter
@@ -847,6 +969,7 @@ const ReservasContainer = () => {
                         setFechaHasta={setFechaHasta}
                         onFilter={handleFilterChange}
                         resetDateRange={resetDateRange}
+                        disabled={isCurrentlyLoading}
                     />
 
                     {/* Subject filter */}
@@ -860,6 +983,7 @@ const ReservasContainer = () => {
                                     placeholder="Todas las materias"
                                     className="form-select form-select-sm"
                                     variant="light"
+                                    disabled={isCurrentlyLoading}
                                 />
                             </div>
                             <div className="col-12 col-md-2">
@@ -867,6 +991,7 @@ const ReservasContainer = () => {
                                     className="btn btn-sm btn-outline-secondary"
                                     onClick={resetMateriaFilter}
                                     title="Limpiar filtro de materia"
+                                    disabled={isCurrentlyLoading}
                                 >
                                     <i className="bi bi-x-circle me-1"></i>
                                     Limpiar
@@ -921,6 +1046,9 @@ const ReservasContainer = () => {
                                             handleConfirmEfectivoPago={handleConfirmEfectivoPago}
                                             handleOpenRatingModal={handleOpenRatingModal}
                                             startVideoCall={startVideoCall}
+                                            isProcessing={isActionProcessing}
+                                            processingAction={processingAction}
+                                            bypassValidations={bypassValidations}
                                         />
                                     ))}
                                 </div>
@@ -944,6 +1072,7 @@ const ReservasContainer = () => {
                                         <button
                                             className="btn btn-sm btn-outline-primary mt-2"
                                             onClick={resetMateriaFilter}
+                                            disabled={isCurrentlyLoading}
                                         >
                                             <i className="bi bi-funnel me-1"></i>
                                             Quitar filtro de materia
@@ -954,7 +1083,7 @@ const ReservasContainer = () => {
                         </div>
                     </div>
 
-                    {/* Informative note based on active role */}
+                    {/* Informative notes based on active role */}
                     {activeTab === 'estudiante' ? (
                         <div className="alert alert-info mt-4">
                             <i className="bi bi-info-circle-fill me-2"></i>
@@ -970,6 +1099,9 @@ const ReservasContainer = () => {
                             </div>
                             <div className="mt-1 text-warning">
                                 <strong>Importante:</strong> Debes realizar el pago dentro de los 3 días posteriores a la tutoría.
+                            </div>
+                            <div className="mt-1 text-info">
+                                <strong>Notificaciones:</strong> Recibirás emails de confirmación para todas las acciones importantes de tus reservas.
                             </div>
                         </div>
                     ) : (
@@ -987,6 +1119,9 @@ const ReservasContainer = () => {
                             </div>
                             <div className="mt-1 text-warning">
                                 <strong>Importante:</strong> Solo puedes completar una reserva después de que haya terminado el horario programado.
+                            </div>
+                            <div className="mt-1 text-info">
+                                <strong>Notificaciones:</strong> Recibirás emails cuando tengas nuevas reservas y confirmaciones de pago.
                             </div>
                         </div>
                     )}
@@ -1016,7 +1151,7 @@ const ReservasContainer = () => {
                     showModal={showPaymentModal}
                     reserva={currentReserva}
                     activeTab={activeTab}
-                    isProcessing={isProcessingPayment}
+                    isProcessing={checkActionProcessing('pago', currentReserva.id)}
                     onClose={() => setShowPaymentModal(false)}
                     onProcessPayment={handleProcessPayment}
                 />
@@ -1031,7 +1166,30 @@ const ReservasContainer = () => {
                         setReservaToRate(null);
                     }}
                     onSubmitRating={handleSubmitRating}
+                    isProcessing={checkActionProcessing('calificar', reservaToRate.id)}
                 />
+            )}
+
+            {/* Loading overlay for critical actions */}
+            {isActionProcessing && (
+                <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
+                     style={{ backgroundColor: 'rgba(0,0,0,0.3)', zIndex: 1040 }}>
+                    <div className="bg-white p-4 rounded-3 shadow text-center">
+                        <div className="spinner-border text-primary mb-3" role="status">
+                            <span className="visually-hidden">Procesando...</span>
+                        </div>
+                        <div className="fw-bold mb-2">
+                            {processingAction?.includes('cancelar') && 'Cancelando reserva...'}
+                            {processingAction?.includes('confirmar') && 'Confirmando reserva...'}
+                            {processingAction?.includes('completar') && 'Completando reserva...'}
+                            {processingAction?.includes('pago') && 'Procesando pago...'}
+                            {processingAction?.includes('calificar') && 'Enviando calificación...'}
+                        </div>
+                        <small className="text-muted">
+                            Se están enviando las notificaciones por email correspondientes.
+                        </small>
+                    </div>
+                </div>
             )}
         </div>
     );

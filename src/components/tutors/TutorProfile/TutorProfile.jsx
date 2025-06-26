@@ -271,17 +271,20 @@ const TutorProfile = () => {
         setSuccess(null);
         try {
             const formattedDate = format(selectedDate, 'yyyy-MM-dd');
-            const response = await ApiService.fetchApi('/reserva/create', 'POST', {
+            const reservaData = {
                 estudiante_id: user.id,
                 servicio_id: selectedServicio.id,
                 fecha: formattedDate,
                 hora_inicio: horarioInicio,
                 hora_fin: horarioFin,
                 estado: 'pendiente'
-            });
+            };
+
+            // Usar el método estático createReserva de ApiService
+            const response = await ApiService.createReserva(reservaData);
 
             if (response.success) {
-                setSuccess('¡Reserva creada con éxito! El tutor recibirá tu solicitud.');
+                setSuccess('¡Reserva creada con éxito! El tutor recibirá tu solicitud por email.');
                 fetchHorariosDisponibles();
                 // Re-calcular fechas disponibles después de crear reserva
                 calcularFechasDisponibles();

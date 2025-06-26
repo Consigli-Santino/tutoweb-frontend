@@ -25,6 +25,8 @@ import CalificacionesListado from "./components/Admin/Califications/Calificacion
 import NotificacionesListado from "./components/Admin/Notifications/NotificacionesListado.jsx";
 import AyudaPreguntasFrecuentes from "./components/AyudaPreguntasFrecuentes/AyudaPreguntasFrecuentes.jsx";
 import BubblePopGame from "./components/Home/BubblePopGame.jsx";
+import TerminosCondiciones from "./components/TYC/TerminosCondiciones.jsx";
+
 
 function App() {
     return (
@@ -49,6 +51,12 @@ function App() {
                                     <Home />
                                 </ProtectedRoute>
                             } />
+                            <Route path="terminoscondiciones" element={
+                                <ProtectedRoute path="terminoscondiciones">
+                                    <TerminosCondiciones />
+                                </ProtectedRoute>
+                            }
+                            ></Route>
                             <Route path="/faq" element={
                                 <ProtectedRoute path="/faq">
                                     <AyudaPreguntasFrecuentes />
