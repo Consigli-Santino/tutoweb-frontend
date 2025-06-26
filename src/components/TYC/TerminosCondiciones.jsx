@@ -28,8 +28,7 @@ const TerminosCondiciones = () => {
             • Sistema de calificaciones y evaluaciones
             • Plataforma de videollamadas integrada
             • Gestión de pagos y facturación
-            • Notificaciones y recordatorios
-            • Seguimiento del progreso académico`
+            • Notificaciones y recordatorios`
         },
         {
             id: 'registro',
@@ -68,9 +67,7 @@ const TerminosCondiciones = () => {
 
             • Los precios se muestran en pesos argentinos (ARS)
             • Los pagos se procesan al momento de la reserva
-            • Las políticas de reembolso se aplican según las circunstancias específicas
-            • Cancelaciones con más de 24hs de anticipación: reembolso completo
-            • Cancelaciones con menos de 24hs: sujeto a evaluación`
+            • Las políticas de reembolso se aplican según las circunstancias específicas`
         },
         {
             id: 'limitacion',
