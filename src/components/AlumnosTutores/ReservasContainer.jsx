@@ -203,15 +203,29 @@ const ReservasContainer = () => {
         if (bypassValidations) return null;
 
         const now = new Date();
-        const reservaDate = new Date(reserva.fecha);
-        const [horaInicio] = reserva.hora_inicio.split(':');
-        const [horaFin] = reserva.hora_fin.split(':');
+        const [year, month, day] = reserva.fecha.split('-');
 
-        const startTime = new Date(reservaDate);
-        startTime.setHours(parseInt(horaInicio), 0, 0, 0);
+        // FIX: Parsear tanto horas como minutos
+        const [horaInicio, minutoInicio] = reserva.hora_inicio.split(':');
+        const [horaFin, minutoFin] = reserva.hora_fin.split(':');
 
-        const endTime = new Date(reservaDate);
-        endTime.setHours(parseInt(horaFin), 0, 0, 0);
+        const startTime = new Date(
+            parseInt(year),
+            parseInt(month) - 1,
+            parseInt(day),
+            parseInt(horaInicio),
+            parseInt(minutoInicio), // ← FIX: Agregar minutos
+            0
+        );
+
+        const endTime = new Date(
+            parseInt(year),
+            parseInt(month) - 1,
+            parseInt(day),
+            parseInt(horaFin),
+            parseInt(minutoFin), // ← FIX: Agregar minutos
+            0
+        );
 
         const allowStartTime = new Date(startTime.getTime() - 15 * 60 * 1000);
 
