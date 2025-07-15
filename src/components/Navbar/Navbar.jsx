@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import ApiService from '../../services/ApiService';
 import logo from '../../assets/d67bf100-ca44-453c-8737-aeffbe5d0c18.png';
-import './Navbar.css';
+import './navbar.css';
 import '../HomeBar/HomeBar.css'; // Importa los estilos del HomeBar
 
 const Navbar = ({ userOptions = [] }) => {
