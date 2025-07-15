@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ClassCountdown from './ClassCountDowns.jsx';
 import GameService from '../../services/GameService';
-import FeedbackService from '../../services/FeedbackService';
+import FeedbackService from '../../services/FeedBackService.js';
 
 const BubblePopGame = () => {
     // Estados principales del juego
