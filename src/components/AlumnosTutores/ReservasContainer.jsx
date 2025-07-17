@@ -295,7 +295,8 @@ const ReservasContainer = () => {
             if (!action) {
                 return true; // Permitir completar sin restricciones en modo test
             }
-            return action.tutor_opened && action.estudiante_opened;
+            return true;
+            //return action.tutor_opened && action.estudiante_opened;
         }
 
         // Validaciones normales
