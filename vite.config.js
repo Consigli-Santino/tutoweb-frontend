@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
-    allowedHosts: ['tutoweb.icu'],
+    allowedHosts: ['tutoweb.icu','https://tutoweb-frontend.vercel.app'],
     cors: true,
     proxy: {
       '/api': {
