@@ -58,6 +58,7 @@ const FormUserByAdmin = () => {
             const data = await response.json();
             if (data.success) {
                 setFormData({
+                    id: data.data.id || '',
                     nombre: data.data.nombre || '',
                     apellido: data.data.apellido || '',
                     email: data.data.email || '',
@@ -149,6 +150,7 @@ const FormUserByAdmin = () => {
                 const formDataToSend = new FormData();
 
                 // Añadir los campos al FormData
+                formDataToSend.append('id',formData.id);
                 formDataToSend.append('nombre', formData.nombre);
                 formDataToSend.append('apellido', formData.apellido);
                 formDataToSend.append('email', formData.email);

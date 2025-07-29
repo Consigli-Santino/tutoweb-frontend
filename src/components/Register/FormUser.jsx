@@ -322,14 +322,14 @@ const FormUser = () => {
 
                             <div className="row g-2">
                                 <div className="col-md-6 mb-2">
-                                    <label className="form-label text-muted small mb-1">CORREO INSTITUCIONAL</label>
+                                    <label className="form-label text-muted small mb-1">CORREO</label>
                                     <input
                                         type="email"
                                         className="form-control form-control-sm bg-light border-0 py-2 rounded-3"
                                         name="email"
                                         value={formData.email}
                                         onChange={handleChange}
-                                        placeholder="Ingrese su correo institucional"
+                                        placeholder="Ingrese su correo "
                                         disabled={isLoading || isEditing}
                                         required
                                     />
