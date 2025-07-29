@@ -93,14 +93,14 @@ const Login = () => {
 
                         <form onSubmit={handleSubmit}>
                             <div className="mb-3">
-                                <label className="form-label text-muted small">CORREO INSTITUCIONAL</label>
+                                <label className="form-label text-muted small">CORREO </label>
                                 <input
                                     type="email"
                                     className="form-control bg-light border-0 py-3 rounded-3"
                                     name="email"
                                     value={formData.email}
                                     onChange={handleChange}
-                                    placeholder="Ingrese su correo institucional"
+                                    placeholder="Ingrese su correo "
                                     disabled={isLoading}
                                 />
                             </div>
@@ -136,7 +136,6 @@ const Login = () => {
                             )}
 
                             <div className="text-center">
-                                <a href="#" className="text-muted small d-block mb-2">¿Olvidaste la contraseña?</a>
                                 <a href="/register" className="text-muted small">Registrarse</a>
                             </div>
                         </form>

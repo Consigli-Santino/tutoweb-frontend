@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ClassCountdown from './ClassCountDowns.jsx';
 import GameService from '../../services/GameService';
-import FeedbackService from '../../services/FeedBackService.js';
+import FeedbackService from '../../services/FeedBackService';
 
 const BubblePopGame = () => {
     // Estados principales del juego
+    const feedbackService = new FeedbackService();
     const [bubbles, setBubbles] = useState([]);
     const [score, setScore] = useState(0);
     const [highScore, setHighScore] = useState(0);
@@ -25,8 +26,8 @@ const BubblePopGame = () => {
     const [gameStartTime, setGameStartTime] = useState(null);
 
     // Estados de configuración
-    const [soundEnabled, setSoundEnabled] = useState(FeedbackService.isSoundEnabled());
-    const [vibrationEnabled, setVibrationEnabled] = useState(FeedbackService.isVibrationEnabled());
+    const [soundEnabled, setSoundEnabled] = useState(feedbackService.isSoundEnabled());
+    const [vibrationEnabled, setVibrationEnabled] = useState(feedbackService.isVibrationEnabled());
 
     // Referencias
     const gameAreaRef = useRef(null);
@@ -80,7 +81,7 @@ const BubblePopGame = () => {
     // Iniciar juego
     const startGame = useCallback(() => {
         console.log('🎮 Iniciando juego');
-        FeedbackService.initializeOnUserInteraction();
+        feedbackService.initializeOnUserInteraction();
         setGameActive(true);
         setGameOver(false);
         setScore(0);
@@ -116,18 +117,18 @@ const BubblePopGame = () => {
                 setScore(prev => prev + chainScore);
                 setTotalBubblesPopped(prev => prev + nearbyBubbles.length);
 
-                FeedbackService.feedback('bomb');
+                feedbackService.feedback('bomb');
                 break;
 
             case 'addTime':
                 setTimeLeft(prev => Math.min(prev + bubble.timeBonus, 60));
-                FeedbackService.feedback('powerup');
+                feedbackService.feedback('powerup');
                 break;
 
             case 'freezeTime':
                 setFreezeActive(true);
                 setTimeout(() => setFreezeActive(false), bubble.freezeDuration);
-                FeedbackService.feedback('freeze');
+                feedbackService.feedback('freeze');
                 break;
 
             case 'rainbow':
@@ -137,7 +138,7 @@ const BubblePopGame = () => {
                     points: b.points * 2,
                     color: { bg: '#FFD700', shadow: '#FFA500' }
                 })));
-                FeedbackService.feedback('powerup');
+                feedbackService.feedback('powerup');
                 break;
         }
     }, [bubbles, createPopEffect]);
@@ -185,7 +186,7 @@ const BubblePopGame = () => {
         handleSpecialEffect(bubble, bubble.x, bubble.y);
         handleCombo();
 
-        FeedbackService.feedback('pop');
+        feedbackService.feedback('pop');
     }, [comboCount, createPopEffect, handleSpecialEffect, handleCombo]);
 
     // Detectar click en el área del juego mejorado
@@ -272,7 +273,7 @@ const BubblePopGame = () => {
 
                 // Sonido de tick en los últimos 5 segundos
                 if (prev <= 5) {
-                    FeedbackService.playSound('tick');
+                    feedbackService.playSound('tick');
                 }
 
                 return prev - 1;
@@ -307,7 +308,7 @@ const BubblePopGame = () => {
         setGameActive(false);
         setGameOver(true);
 
-        FeedbackService.feedback('gameOver');
+        feedbackService.feedback('gameOver');
 
         // Calcular estadísticas
         const accuracy = totalBubblesPopped > 0 ?
@@ -335,12 +336,12 @@ const BubblePopGame = () => {
 
     // Toggle de configuración
     const toggleSound = () => {
-        const newState = FeedbackService.toggleSound();
+        const newState = feedbackService.toggleSound();
         setSoundEnabled(newState);
     };
 
     const toggleVibration = () => {
-        const newState = FeedbackService.toggleVibration();
+        const newState = feedbackService.toggleVibration();
         setVibrationEnabled(newState);
     };
 
