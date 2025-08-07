@@ -29,8 +29,7 @@ const TutorsCRUDServiciosTutoria = () => {
 
     // Opciones para modalidad
     const modalidadOptions = [
-        { id: 'virtual', nombre: 'Virtual' },
-        { id: 'ambas', nombre: 'Ambas' }
+        { id: 'virtual', nombre: 'Virtual' }
     ];
 
     useEffect(() => {
