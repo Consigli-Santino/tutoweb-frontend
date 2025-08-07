@@ -129,6 +129,12 @@ const ListadoReservas = () => {
             );
         }
 
+        result.sort((a, b) => {
+            const fechaA = new Date(`${a.fecha}T${a.hora_inicio}`);
+            const fechaB = new Date(`${b.fecha}T${b.hora_inicio}`);
+            return fechaB - fechaA; // Orden descendente (más recientes primero)
+        });
+
         setFilteredReservas(result);
         console.log(filteredReservas);
         setCurrentPage(1);

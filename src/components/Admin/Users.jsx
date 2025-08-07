@@ -4,7 +4,7 @@ import '../Login/LoginButton.css';
 import '../../commonTables.css';
 import { useEntidades } from '../../context/EntidadesContext.jsx';
 import CustomSelect from '../../components/CustomInputs/CustomSelect.jsx';
-import ExcelExportService from "../../services/ExcelExportService.js"; // Importamos nuestro componente personalizado
+import ExcelExportService from "../../services/ExcelExportService.js";
 
 const Users = () => {
     const navigate = useNavigate();
@@ -24,6 +24,10 @@ const Users = () => {
     const [rolFilter, setRolFilter] = useState('');
     const [carreraFilter, setCarreraFilter] = useState('');
     const [materiaFilter, setMateriaFilter] = useState('');
+
+    // Estados para paginación
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 10;
 
     useEffect(() => {
         fetchUsuarios();
@@ -91,6 +95,30 @@ const Users = () => {
         }
 
         setFilteredUsuarios(result);
+        setCurrentPage(1); // Resetear a la primera página cuando se aplican filtros
+    };
+
+    // Cálculos para paginación
+    const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
+    const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
+    const currentUsuarios = filteredUsuarios.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(filteredUsuarios.length / ITEMS_PER_PAGE);
+
+    // Funciones de paginación
+    const handlePageChange = (pageNumber) => {
+        setCurrentPage(pageNumber);
+    };
+
+    const handlePrevPage = () => {
+        if (currentPage > 1) {
+            setCurrentPage(currentPage - 1);
+        }
+    };
+
+    const handleNextPage = () => {
+        if (currentPage < totalPages) {
+            setCurrentPage(currentPage + 1);
+        }
     };
 
     const handleSearchChange = (e) => {
@@ -105,7 +133,6 @@ const Users = () => {
         const selectedCarreraId = e.target.value;
         setCarreraFilter(selectedCarreraId);
     };
-
 
     const clearFilters = () => {
         setSearchTerm('');
@@ -134,10 +161,10 @@ const Users = () => {
             setIsLoading(false);
         }
     };
+
     const exportToExcel = async () => {
         setIsLoading(true);
-        ExcelExportService.exportUsersToExcel(filteredUsuarios)
-
+        ExcelExportService.exportUsersToExcel(filteredUsuarios);
     }
 
     const handleEdit = (id) => {
@@ -237,8 +264,8 @@ const Users = () => {
                             </tr>
                             </thead>
                             <tbody>
-                            {filteredUsuarios.length > 0 ? (
-                                filteredUsuarios.map(usuario => (
+                            {currentUsuarios.length > 0 ? (
+                                currentUsuarios.map(usuario => (
                                     <tr key={usuario.id} className="table-row hover-row">
                                         <td className="border-0 py-3">{usuario.nombre}</td>
                                         <td className="border-0 py-3">{usuario.apellido}</td>
@@ -312,11 +339,78 @@ const Users = () => {
                         </table>
                     </div>
 
-                    <div className="d-flex justify-content-between align-items-center mt-3">
-                        <div className="text-muted small">
-                            Mostrando {filteredUsuarios.length} de {usuarios.length} usuarios
+                    {/* Paginación */}
+                    {filteredUsuarios.length > ITEMS_PER_PAGE && (
+                        <nav aria-label="Paginación de usuarios" className="mt-4">
+                            <div className="d-flex justify-content-between align-items-center">
+                                <div className="text-muted small">
+                                    Mostrando {indexOfFirstItem + 1} - {Math.min(indexOfLastItem, filteredUsuarios.length)} de {filteredUsuarios.length} usuarios
+                                </div>
+                                <ul className="pagination pagination-sm mb-0">
+                                    <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
+                                        <button
+                                            className="page-link"
+                                            onClick={handlePrevPage}
+                                            disabled={currentPage === 1}
+                                        >
+                                            <i className="bi bi-chevron-left"></i>
+                                        </button>
+                                    </li>
+
+                                    {/* Mostrar páginas */}
+                                    {[...Array(totalPages)].map((_, index) => {
+                                        const pageNumber = index + 1;
+                                        // Mostrar solo algunas páginas para evitar demasiados botones
+                                        if (
+                                            pageNumber === 1 ||
+                                            pageNumber === totalPages ||
+                                            (pageNumber >= currentPage - 1 && pageNumber <= currentPage + 1)
+                                        ) {
+                                            return (
+                                                <li key={pageNumber} className={`page-item ${currentPage === pageNumber ? 'active' : ''}`}>
+                                                    <button
+                                                        className="page-link"
+                                                        onClick={() => handlePageChange(pageNumber)}
+                                                    >
+                                                        {pageNumber}
+                                                    </button>
+                                                </li>
+                                            );
+                                        } else if (
+                                            pageNumber === currentPage - 2 ||
+                                            pageNumber === currentPage + 2
+                                        ) {
+                                            return (
+                                                <li key={pageNumber} className="page-item disabled">
+                                                    <span className="page-link">...</span>
+                                                </li>
+                                            );
+                                        }
+                                        return null;
+                                    })}
+
+                                    <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
+                                        <button
+                                            className="page-link"
+                                            onClick={handleNextPage}
+                                            disabled={currentPage === totalPages}
+                                        >
+                                            <i className="bi bi-chevron-right"></i>
+                                        </button>
+                                    </li>
+                                </ul>
+                            </div>
+                        </nav>
+                    )}
+
+                    {/* Información de usuarios solo cuando no hay paginación */}
+                    {filteredUsuarios.length <= ITEMS_PER_PAGE && (
+                        <div className="d-flex justify-content-between align-items-center mt-3">
+                            <div className="text-muted small">
+                                Mostrando {filteredUsuarios.length} de {usuarios.length} usuarios
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     <div className="home-bar-spacing"></div>
                 </div>
