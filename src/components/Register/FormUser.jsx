@@ -24,6 +24,7 @@ const FormUser = () => {
     const [originalEmail, setOriginalEmail] = useState('');
 
     const [formData, setFormData] = useState({
+        id: '',
         nombre: '',
         apellido: '',
         email: '',
@@ -118,6 +119,7 @@ const FormUser = () => {
             const user = userData.data;
 
             setFormData({
+                id: user.id || '',
                 nombre: user.nombre || '',
                 apellido: user.apellido || '',
                 email: user.email || '',
@@ -209,7 +211,7 @@ const FormUser = () => {
         }
         formDataToSend.append('id_rol', formData.id_rol);
         formDataToSend.append('id_carrera', formData.carrera_id);
-
+        formDataToSend.append('id',formData.id);
         if (formData.foto_perfil) {
             formDataToSend.append('profile_image', formData.foto_perfil);
         }
